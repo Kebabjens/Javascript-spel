@@ -1,0 +1,14 @@
+html{
+    overflow: hidden;
+}
+
+body{
+    margin: 0;
+    padding: 0;
+}
+canvas{
+    border: 1px solid black;
+    background-image: url("bilder/bana.png");
+    background-repeat: no-repeat;
+    background-size: 100%;
+}
