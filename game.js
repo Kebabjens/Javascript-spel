@@ -13,11 +13,14 @@ let ms = Date.now();
 console.log(window.innerHeight)
 console.log(window.innerWidth)
 let lastFireTime = 0;
-let fireCooldown = 125;
+let fireCooldown = 225;
 
 /*ctx.fillStyle = "blue";*/
 ctx.drawImage(image, 580, 250, 65, 65)
 /*ctx.fillRect(300, 300, 50, 50);*/
+
+let score = 0
+
 
 //ctx.drawImage(zombieImage, 300, 300, 50, 50)
 
@@ -26,6 +29,13 @@ let player = {
   y: 250,
   speed: 6
 };
+let monster = {
+  x: 300,
+  y: 300,
+  width: 55,
+  height: 55,
+  speed: 3
+}
 
 class projectile{
   constructor(startPos, dir, speed){
@@ -45,13 +55,14 @@ class projectile{
     
   }
   
+  
 }
 
 let projectileList = [];
 
 function Update(){
     requestAnimationFrame(Update);
-    
+    //Röreslse för spelaren
     if (keys["d"]) {
         player.x += player.speed; 
       }
@@ -65,7 +76,21 @@ function Update(){
         player.y -= player.speed;
       }
 
+      // Röresle för monstret
+      if (monster.x < player.x){
+        monster.x += monster.speed;
+      }
+      if (player.x < monster.x){
+        monster.x -= monster.speed;
+      }
+      if (monster.y < player.y){
+        monster.y += monster.speed;
+      }
+      if (player.y < monster.y){
+        monster.y -= monster.speed;
+      }
 
+      //Se till att spelaren inte kan röra sig utanför spelplanen
       player.x = Math.max(30, Math.min(canvas.width - 100, player.x));
       player.y = Math.max(20, Math.min(canvas.height - 80, player.y));   
     
@@ -73,6 +98,7 @@ function Update(){
       let projSpeed = 15;
       let currentTime = Date.now();
       
+      //Attack
       if (keys.ArrowRight && keys.ArrowDown && currentTime - lastFireTime > fireCooldown) {
         projectileList.push(new projectile([player.x, player.y], [1, 1], (Math.sqrt(2)/2) * projSpeed));
         lastFireTime = currentTime;
@@ -105,9 +131,20 @@ function Update(){
       }
 
       
-
-      for(let goli of projectileList){
+      for (let i = projectileList.length - 1; i >= 0; i--) {
+        let goli = projectileList[i];
+        if (goli.pos[0] < 0 ||  goli.pos[0] > window.innerWidth || goli.pos[1] < 0 || goli.pos[1] > window.innerHeight) {
+            projectileList.splice(i, 1);
+        }
+        if (goli.pos[0] > monster.x -20 && goli.pos[0] < monster.x + monster.width + 20 && goli.pos[1] > monster.y - 20 && goli.pos[1] < monster.y + monster.height + 20){
+            projectileList.splice(i, 1);
+            monster.x = Math.random() * window.innerWidth
+            monster.y = Math.random() * window.innerHeight  
+            score ++
+        }
         goli.Update();
+    
+        console.log(projectileList)
       }
 }
 
@@ -118,7 +155,9 @@ function Draw(){
 
     /*ctx.fillStyle = "blue";*/
     ctx.drawImage(image, player.x, player.y, 65, 65)
-    ctx.drawImage(zombieImage, 300, 300, 50, 50)
+    ctx.drawImage(zombieImage, monster.x, monster.y, monster.width, monster.height)
+    ctx.font = "50px serif"
+    ctx.fillText("Score: " + score, 100, 100)
 
     for(let goli of projectileList){
       goli.Draw();
