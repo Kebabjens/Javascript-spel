@@ -6,12 +6,14 @@ const image = document.getElementById("source");
 const zombieImage = document.getElementById("zombie");
 let projImage = new Image(2, 2);
 projImage.src = "./bilder/steen.png";
+let bossImage = new Image(2,2);
+bossImage.src = "./bilder/daidolos.png"
 /*let zombieImage = new Image(30,40);*/
 //zombieImage = "./bilder/zombie.png";
 const d = new Date();
 let ms = Date.now();
-console.log(window.innerHeight);
-console.log(window.innerWidth);
+//console.log(window.innerHeight);
+//console.log(window.innerWidth);
 let lastFireTime = 0;
 let fireCooldown = 225;
 let invincibleDuration = 0;
@@ -20,19 +22,47 @@ let invincibleDuration = 0;
 /*ctx.fillStyle = "blue";*/
 ctx.drawImage(image, 580, 250, 65, 65);
 /*ctx.fillRect(300, 300, 50, 50);*/
-
+let difficulty = 1
 let score = 0;
 let hp = 5;
 let hearts = ""
 
 //ctx.drawImage(zombieImage, 300, 300, 50, 50)
 
-let player = {
+class players {
+  constructor(pos, speed, width, height){
+    this.pos = pos
+    this.speed = speed
+    this.width = width
+    this.height = height
+
+  }
+  playerUpdate(){
+    //Röreslse för spelaren
+  if (keys["d"]) {
+    player.pos[0] += player.speed;
+  }
+  if (keys["a"]) {
+    player.pos[0] -= player.speed;
+  }
+  if (keys["s"]) {
+    player.pos[1] += player.speed;
+  }
+  if (keys["w"]) {
+    player.pos[1] -= player.speed;
+  }
+  }
+
+  playerDraw(){
+    ctx.drawImage(image, player.pos[0], player.pos[1], 65, 65);
+  }
+}
+/*let player = {
   x: 580,
   y: 250,
   speed: 6,
-};
-
+};*/
+let player = new players([580, 300], 6, 65, 65)
 class monsters {
   constructor(startPos, speed, width, height) {
     this.pos = startPos;
@@ -40,24 +70,66 @@ class monsters {
     this.width = width;
     this.height = height;
 
+    this.frameIndex = 1;
+    this.frameCount = 10;
+    this.timePerFrame = 100;
+    this. currentTime = ms;
+    this.frames = [];
+
+    for (let i = 1; i<= this.frameCount; i++){
+      let frame = new Image();
+      frame.src = `./bilder/Zombie/Frame${i}.png`
+      this.frames.push(frame);
+    }
+
     this.targetPos = [0, 0];
     this.findTargetTime = 0;
     this.cooldown = 10;
   }
 
   mobDraw() {
-    ctx.drawImage(
-      zombieImage,
-      this.pos[0],
-      this.pos[1],
-      this.width,
-      this.height
-    );
+    
+    if (this.currentTime + this.timePerFrame <= Date.now()) {
+      this.frameIndex++;
+      if (this.frameIndex >= this.frameCount) {
+        this.frameIndex = 1;
+      }
+      this.currentTime = Date.now();
+    }
+
+
+    for (let mob of monsterList) {
+      // Calculate the distance between the player and the monster
+      let distanceX = mob.pos[0] - player.pos[0];
+  
+      // Flip the image horizontally if the monster is on the right side of the player
+      if (distanceX > 0) {
+          ctx.save(); // Save the current canvas state
+          ctx.scale(-1, 1); // Flip horizontally
+          ctx.drawImage(
+              mob.frames[mob.frameIndex],
+              -mob.pos[0] - mob.width, // Adjust position after flipping
+              mob.pos[1],
+              mob.width,
+              mob.height
+          );
+          ctx.restore(); // Restore the canvas state to prevent flipping other objects
+      } else {
+          // Draw the monster normally if it's on the left side of the player
+          ctx.drawImage(
+              mob.frames[mob.frameIndex],
+              mob.pos[0],
+              mob.pos[1],
+              mob.width,
+              mob.height
+          );
+      }
+  }
   }
 
   mobUpdate() {
     if (this.findTargetTime <= 0) {
-      this.targetPos = [player.x, player.y];
+      this.targetPos = [player.pos[0], player.pos[1]];
       this.findTargetTime = this.cooldown;
     }
 
@@ -75,9 +147,50 @@ class monsters {
     }
 
     this.findTargetTime--;
+
+    
   }
 }
+class daidalos {
+  constructor(pos, speed, height, width) {
+    this.pos = pos;
+    this.speed = speed;
+    this.height = height;
+    this.width = width;
 
+
+    this.targetPos = [0, 0];
+    this.findTargetTime = 0;
+    this.cooldown = 40;
+  }
+
+  bossDraw(){
+    ctx.drawImage(bossImage, this.pos[0], this.pos[1], this.width, this.height)
+  }
+
+  bossUpdate(){
+    if (this.findTargetTime <= 0) {
+      this.targetPos = [player.pos[0]+(player.width/2), player.pos[1]+(player.height/2)];
+      this.findTargetTime = this.cooldown;
+    }
+
+    if (this.pos[0]+(this.width/2) < this.targetPos[0]) {
+      this.pos[0] += this.speed;
+    }
+    if (this.targetPos[0] < this.pos[0]+(this.width/2)) {
+      this.pos[0] -= this.speed;
+    }
+    if (this.pos[1]+(this.height/2) < this.targetPos[1]) {
+      this.pos[1] += this.speed;
+    }
+    if (this.targetPos[1] < this.pos[1]+(this.height/2)) {
+      this.pos[1] -= this.speed;
+    }
+
+    this.findTargetTime--;
+
+  }
+}
 class projectile {
   constructor(startPos, dir, speed) {
     this.pos = startPos;
@@ -89,7 +202,7 @@ class projectile {
     // Rörelse för stenar
     this.pos = [
       this.pos[0] + this.dir[0] * this.speed,
-      this.pos[1] + this.dir[1] * this.speed,
+      this.pos[1] + this.dir[1] * this.speed
     ];
   }
 
@@ -97,34 +210,50 @@ class projectile {
     ctx.drawImage(projImage, this.pos[0] + 20, this.pos[1] + 20);
   }
 }
-
+let bossList = [];
 let projectileList = [];
 let monsterList = [];
 
 monsterList.push(new monsters([0, Math.random() * 50 + 170], 2, 55, 55));
 monsterList.push(new monsters([0, Math.random() * 50 + 170], 2, 55, 55));
-monsterList.push(new monsters([0, Math.random() * 50 + 170], 2, 55, 55));
-monsterList.push(new monsters([0, Math.random() * 50 + 170], 2, 55, 55));
 
+function bossfight(){
+  bossList.push(new daidalos([300, 300], 1.25, 200, 200))  
+}
 function Update() {
+  
+
+  if (monsterList.length == 0){ 
+    for (let a=0; a<(difficulty*4);a++){
+      if (difficulty > 3){
+        bossfight()
+        //bossList.push(new daidalos([300, 300], 4, 200, 200))
+      }
+      let rändöm = Math.floor(Math.random() * 4);
+        //console.log(rändöm);
+        switch (rändöm) {
+          case 0:
+            monsterList.push(new monsters([0, (canvas.height / 2) + Math.random()*500-250], 2, 55, 55));
+            break;
+          case 1:
+            monsterList.push(new monsters([(canvas.width / 2) + Math.random()*500-250, 0], 2, 55, 55));
+            break;
+          case 2:
+            monsterList.push(new monsters([canvas.width, (canvas.height / 2) + Math.random()*500-250], 2, 55, 55));
+            break;
+          default:
+            monsterList.push(new monsters([(canvas.width / 2) + Math.random()*500-250, canvas.height], 2, 55, 55));
+        }
+    }
+    difficulty ++
+
+  }
   requestAnimationFrame(Update);
-  //Röreslse för spelaren
-  if (keys["d"]) {
-    player.x += player.speed;
-  }
-  if (keys["a"]) {
-    player.x -= player.speed;
-  }
-  if (keys["s"]) {
-    player.y += player.speed;
-  }
-  if (keys["w"]) {
-    player.y -= player.speed;
-  }
+  
 
   //Se till att spelaren inte kan röra sig utanför spelplanen
-  player.x = Math.max(30, Math.min(canvas.width - 100, player.x));
-  player.y = Math.max(20, Math.min(canvas.height - 80, player.y));
+  player.pos[0] = Math.max(30, Math.min(canvas.width - 100, player.pos[0]));
+  player.pos[1] = Math.max(20, Math.min(canvas.height - 80, player.pos[1]));
 
   monsters.speed = 3;
   monsters.width = 55;
@@ -140,7 +269,7 @@ function Update() {
   ) {
     projectileList.push(
       new projectile(
-        [player.x, player.y],
+        [player.pos[0], player.pos[1]],
         [1, 1],
         (Math.sqrt(2) / 2) * projSpeed
       )
@@ -153,7 +282,7 @@ function Update() {
   ) {
     projectileList.push(
       new projectile(
-        [player.x, player.y],
+        [player.pos[0], player.pos[1]],
         [1, -1],
         (Math.sqrt(2) / 2) * projSpeed
       )
@@ -161,7 +290,7 @@ function Update() {
     lastFireTime = currentTime;
   } else if (keys.ArrowRight && currentTime - lastFireTime > fireCooldown) {
     projectileList.push(
-      new projectile([player.x, player.y], [1, 0], projSpeed)
+      new projectile([player.pos[0], player.pos[1]], [1, 0], projSpeed)
     );
     lastFireTime = currentTime;
   }
@@ -172,7 +301,7 @@ function Update() {
   ) {
     projectileList.push(
       new projectile(
-        [player.x, player.y],
+        [player.pos[0], player.pos[1]],
         [-1, 1],
         (Math.sqrt(2) / 2) * projSpeed
       )
@@ -185,7 +314,7 @@ function Update() {
   ) {
     projectileList.push(
       new projectile(
-        [player.x, player.y],
+        [player.pos[0], player.pos[1]],
         [-1, -1],
         (Math.sqrt(2) / 2) * projSpeed
       )
@@ -193,19 +322,19 @@ function Update() {
     lastFireTime = currentTime;
   } else if (keys.ArrowLeft && currentTime - lastFireTime > fireCooldown) {
     projectileList.push(
-      new projectile([player.x, player.y], [-1, 0], projSpeed)
+      new projectile([player.pos[0], player.pos[1]], [-1, 0], projSpeed)
     );
     lastFireTime = currentTime;
   }
   if (keys.ArrowDown && currentTime - lastFireTime > fireCooldown) {
     projectileList.push(
-      new projectile([player.x, player.y], [0, 1], projSpeed)
+      new projectile([player.pos[0], player.pos[1]], [0, 1], projSpeed)
     );
     lastFireTime = currentTime;
   }
   if (keys.ArrowUp && currentTime - lastFireTime > fireCooldown) {
     projectileList.push(
-      new projectile([player.x, player.y], [0, -1], projSpeed)
+      new projectile([player.pos[0], player.pos[1]], [0, -1], projSpeed)
     );
     lastFireTime = currentTime;
   }
@@ -226,16 +355,18 @@ function Update() {
   for (let mob of monsterList) {
     mob.mobUpdate();
   }
+  for (let a of bossList){
+    a.bossUpdate();
+  }
+  player.playerUpdate();
   for (let i = projectileList.length - 1; i >= 0; i--) {
     for (let j = monsterList.length - 1; j >= 0; j--) {
+      if (projectileList[i] && monsterList[j]) {
       let boolet = projectileList[i];
       let mob = monsterList[j];
 
       if (
-        boolet.pos[0] > mob.pos[0] - 20 &&
-        boolet.pos[0] < mob.pos[0] + mob.width + 20 &&
-        boolet.pos[1] > mob.pos[1] - 20 &&
-        boolet.pos[1] < mob.pos[1] + mob.height + 20
+        boolet.pos[0] > mob.pos[0] - 20 && boolet.pos[0] < mob.pos[0] + mob.width + 20 && boolet.pos[1] > mob.pos[1] - 20 && boolet.pos[1] < mob.pos[1] + mob.height + 20
       ) {
         projectileList.splice(i, 1);
         monsterList.splice(j, 1);
@@ -243,43 +374,37 @@ function Update() {
         //monster.y = Math.random() * window.innerHeight
 
         let rändöm = Math.floor(Math.random() * 4);
-        console.log(rändöm);
+        //console.log(rändöm);
         switch (rändöm) {
           case 0:
-            monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
-            monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
+            //monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
             break;
           case 1:
-            monsterList.push(new monsters([canvas.width / 2, 0], 2, 55, 55));
-            monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
+            //monsterList.push(new monsters([canvas.width / 2, 0], 2, 55, 55));
             break;
           case 2:
-            monsterList.push(
-              new monsters([canvas.width, canvas.height / 2], 2, 55, 55)
-              
-            );
-            monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
+            //monsterList.push(
+              //new monsters([canvas.width, canvas.height / 2], 2, 55, 55));
             break;
           default:
-            monsterList.push(
-              new monsters([canvas.width / 2, canvas.height], 2, 55, 55)
-            );
-            monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
+            //monsterList.push(
+            //  new monsters([canvas.width / 2, canvas.height], 2, 55, 55));
         }
 
         score++;
       }
     }
+  }
 
     //console.log(monsterList)
   }
   for (let j = monsterList.length - 1; j >= 0; j--) {
     let mob = monsterList[j]
     if (
-      player.x > mob.pos[0] - 5 &&
-      player.x < mob.pos[0] + mob.width + 5 &&
-      player.y > mob.pos[1] - 5 &&
-      player.y < mob.pos[1] + mob.height + 5
+      player.pos[0] > mob.pos[0] - 5 &&
+      player.pos[0] < mob.pos[0] + mob.width + 5 &&
+      player.pos[1] > mob.pos[1] - 5 &&
+      player.pos[1] < mob.pos[1] + mob.height + 5
     ) {
       if(invincibleDuration < 0){
         hp --
@@ -292,13 +417,14 @@ function Update() {
 }
 
 function Draw() {
+  ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
   ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${
     Math.random() * 255
   })`;
   /*ctx.fillStyle = "blue";*/
-  ctx.drawImage(image, player.x, player.y, 65, 65);
+  
   //ctx.drawImage(zombieImage, monster.x, monster.y, monster.width, monster.height)
 
   for (let boolet of projectileList) {
@@ -307,6 +433,10 @@ function Draw() {
   for (let mob of monsterList) {
     mob.mobDraw();
   }
+  for (let daedalus of bossList){
+    daedalus.bossDraw();
+  }
+  player.playerDraw();
   /*ctx.fillRect(300, 300, 50, 50);*/
   ctx.font = "25px serif";
   ctx.fillStyle = "#aaaaaa";
@@ -320,7 +450,7 @@ function Draw() {
   }
   ctx.fillText(hearts, (canvas.width)/2 - hp * 13, 35);
   ctx.font = "100px"
-  if (hp == 0){
+  if (hp <= 0){
     ctx.fillText("You Died", 300, 300 )
   }
   requestAnimationFrame(Draw);
