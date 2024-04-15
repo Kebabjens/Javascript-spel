@@ -6,6 +6,8 @@ const image = document.getElementById("source");
 const zombieImage = document.getElementById("zombie");
 let projImage = new Image(2, 2);
 projImage.src = "./bilder/steen.png";
+let mobProjImage = new Image(2,2);
+mobProjImage.src = "./bilder/mobSteen.png";
 let bossImage = new Image(2,2);
 bossImage.src = "./bilder/daidolos.png"
 /*let zombieImage = new Image(30,40);*/
@@ -97,10 +99,10 @@ for (let i = 1; i <= frameCountFast; i++) {
   framesFast.push(frame);
 }
 
-console.log(framesFast);
-console.log(framesNormal);
+//console.log(framesFast);
+//console.log(framesNormal);
 
-class monsters {
+class Monsters {
   constructor(startPos, speed, width, height, img, hp ) {
     this.pos = startPos;
     this.speed = speed;
@@ -169,7 +171,7 @@ class monsters {
         }
         this.currentTime = Date.now();
       }
-      console.log(framesNormal)
+      //console.log(framesNormal)
       if (distanceX > 0) {
           ctx.save(); // Save the current canvas state
           ctx.scale(-1, 1); // Flip horizontally
@@ -305,40 +307,79 @@ class projectile {
     ctx.drawImage(projImage, this.pos[0] + 20, this.pos[1] + 20);
   }
 }
+class Mobprojectile {
+  constructor(startPos, dir, speed) {
+    this.pos = startPos;
+    this.dir = dir;
+    this.speed = speed;
+  }
+
+  MobProjUpdate() {
+    // Rörelse för stenar
+    this.pos = [
+      this.pos[0] + this.dir[0] * this.speed,
+      this.pos[1] + this.dir[1] * this.speed
+    ];
+  }
+
+  MobProjDraw() {
+    ctx.drawImage(mobProjImage, this.pos[0] + 20, this.pos[1] + 20);
+  }
+}
 let bossList = [];
 let projectileList = [];
+let mobProjectileList = [];
 let monsterList = [];
 
-monsterList.push(new monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
-monsterList.push(new monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
+monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
+monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
 
 function bossfight(){
-  bossList.push(new daidalos([-300, 300], 1.25, 200, 200, 20))  
+  bossList.push(new daidalos([-300, 300], 1.25, 200, 200, 20));
+  let L = 1;
+  let cd = 300;
+  let time = Date.now();
+  while (L > 0 ){
+    if(Date.now() - time > cd){
+      for (let a = -1; a <=1; a++){
+        for (let b = -1; b <=1; b++){
+          if (a != 0 || b != 0){
+          MobShoot(a, b);
+          }
+        }
+      }
+      L--; // Decrement L to eventually exit the loop
+      time = Date.now();
+    }
+  }
 }
+
+
+
 function mobSpawn(){
   if (monsterList.length == 0 && bossList.length == 0){ 
     
-    if (difficulty > 7){
+    if (difficulty > 1){
       bossfight()
       //bossList.push(new daidalos([300, 300], 4, 200, 200))
     }
     
-    else{
+    //else{
       for (let a=0; a<(difficulty*3);a++){
       let rändöm = Math.floor(Math.random() * 4);
       //console.log(rändöm);
       switch (rändöm) {
         case 0:
-          monsterList.push(new monsters([0, (canvas.height / 2) + Math.random()*500-250], 1.5, 55, 55, "Normal", 2));
+          monsterList.push(new Monsters([0, (canvas.height / 2) + Math.random()*500-250], 1.5, 55, 55, "Normal", 2));
           break;
         case 1:
-          monsterList.push(new monsters([(canvas.width / 2) + Math.random()*500-250, 0], 1.5, 55, 55, "Normal", 2));
+          monsterList.push(new Monsters([(canvas.width / 2) + Math.random()*500-250, 0], 1.5, 55, 55, "Normal", 2));
           break;
         case 2:
-          monsterList.push(new monsters([canvas.width, (canvas.height / 2) + Math.random()*500-250], 1.5, 55, 55, "Normal", 2));
+          monsterList.push(new Monsters([canvas.width, (canvas.height / 2) + Math.random()*500-250], 1.5, 55, 55, "Normal", 2));
           break;
         default:
-          monsterList.push(new monsters([(canvas.width / 2) + Math.random()*500-250, canvas.height], 1.5, 55, 55, "Normal", 2));
+          monsterList.push(new Monsters([(canvas.width / 2) + Math.random()*500-250, canvas.height], 1.5, 55, 55, "Normal", 2));
       }
     }
       if (difficulty > 3){
@@ -347,109 +388,53 @@ function mobSpawn(){
       //console.log(rändöm);
       switch (rändöm) {
         case 0:
-          monsterList.push(new monsters([0, (canvas.height / 2) + Math.random()*500-250], 2.5, 25, 45, "Fast", 1));
+          monsterList.push(new Monsters([0, (canvas.height / 2) + Math.random()*500-250], 2.5, 25, 45, "Fast", 1));
           break;
         case 1:
-          monsterList.push(new monsters([(canvas.width / 2) + Math.random()*500-250, 0], 2.5, 25, 45, "Fast", 1));
+          monsterList.push(new Monsters([(canvas.width / 2) + Math.random()*500-250, 0], 2.5, 25, 45, "Fast", 1));
           break;
         case 2:
-          monsterList.push(new monsters([canvas.width, (canvas.height / 2) + Math.random()*500-250], 2.5, 25, 45, "Fast", 1));
+          monsterList.push(new Monsters([canvas.width, (canvas.height / 2) + Math.random()*500-250], 2.5, 25, 45, "Fast", 1));
           break;
         default:
-          monsterList.push(new monsters([(canvas.width / 2) + Math.random()*500-250, canvas.height], 2.5, 25, 45, "Fast", 1));
+          monsterList.push(new Monsters([(canvas.width / 2) + Math.random()*500-250, canvas.height], 2.5, 25, 45, "Fast", 1));
       }
         }
       
   }
-    }
+    //}
     
   difficulty ++
 
 }
 }
-
-function shoot(){
-  let projSpeed = 15;
-  let currentTime = Date.now();
-
-  //Attack
-  if (
-    keys.ArrowRight &&
-    keys.ArrowDown &&
-    currentTime - lastFireTime > fireCooldown
-  ) {
-    projectileList.push(
-      new projectile(
-        [player.pos[0], player.pos[1]],
-        [1, 1],
-        (Math.sqrt(2) / 2) * projSpeed
-      )
+function MobShoot(dirx, diry){
+  let projSpeed = 8
+  if(dirx == 0 || diry == 0){
+    mobProjectileList.push(new Mobprojectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed)
     );
-    lastFireTime = currentTime;
-  } else if (
-    keys.ArrowRight &&
-    keys.ArrowUp &&
-    currentTime - lastFireTime > fireCooldown
-  ) {
-    projectileList.push(
-      new projectile(
-        [player.pos[0], player.pos[1]],
-        [1, -1],
-        (Math.sqrt(2) / 2) * projSpeed
-      )
-    );
-    lastFireTime = currentTime;
-  } else if (keys.ArrowRight && currentTime - lastFireTime > fireCooldown) {
-    projectileList.push(
-      new projectile([player.pos[0], player.pos[1]], [1, 0], projSpeed)
-    );
-    lastFireTime = currentTime;
   }
-  if (
-    keys.ArrowLeft &&
-    keys.ArrowDown &&
-    currentTime - lastFireTime > fireCooldown
-  ) {
-    projectileList.push(
-      new projectile(
-        [player.pos[0], player.pos[1]],
-        [-1, 1],
-        (Math.sqrt(2) / 2) * projSpeed
-      )
-    );
-    lastFireTime = currentTime;
-  } else if (
-    keys.ArrowLeft &&
-    keys.ArrowUp &&
-    currentTime - lastFireTime > fireCooldown
-  ) {
-    projectileList.push(
-      new projectile(
-        [player.pos[0], player.pos[1]],
-        [-1, -1],
-        (Math.sqrt(2) / 2) * projSpeed
-      )
-    );
-    lastFireTime = currentTime;
-  } else if (keys.ArrowLeft && currentTime - lastFireTime > fireCooldown) {
-    projectileList.push(
-      new projectile([player.pos[0], player.pos[1]], [-1, 0], projSpeed)
-    );
-    lastFireTime = currentTime;
-  }
-  if (keys.ArrowDown && currentTime - lastFireTime > fireCooldown) {
-    projectileList.push(
-      new projectile([player.pos[0], player.pos[1]], [0, 1], projSpeed)
-    );
-    lastFireTime = currentTime;
-  }
-  if (keys.ArrowUp && currentTime - lastFireTime > fireCooldown) {
-    projectileList.push(
-      new projectile([player.pos[0], player.pos[1]], [0, -1], projSpeed)
-    );
-    lastFireTime = currentTime;
+  else{
+    mobProjectileList.push(new Mobprojectile([player.pos[0], player.pos[1]], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
   }
 }
+function shoot(dirx, diry){
+  let projSpeed = 15;
+  
+
+  //Attack
+  
+    if(dirx == 0 || diry == 0){
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed)
+      );
+    }
+    else{
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
+    }
+    
+  
+}
+
 function Update() {
   mobSpawn();
 
@@ -461,10 +446,53 @@ function Update() {
   player.pos[0] = Math.max(30, Math.min(canvas.width - 100, player.pos[0]));
   player.pos[1] = Math.max(20, Math.min(canvas.height - 80, player.pos[1]));
 
-  monsters.speed = 3;
-  monsters.width = 55;
-  monsters.height = 55;
-  shoot();
+  Monsters.speed = 3;
+  Monsters.width = 55;
+  Monsters.height = 55;
+  let currentTime = Date.now();
+  if (currentTime - lastFireTime > fireCooldown) {
+  if (keys.ArrowRight && keys.ArrowDown){
+    shoot(1, 1)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowRight && keys.ArrowUp){
+    shoot(1, -1)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowRight){
+    shoot(1, 0)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowLeft && keys.ArrowDown){
+    shoot(-1, 1)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowLeft && keys.ArrowUp){
+    shoot(-1, -1)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowLeft){
+    shoot(-1, 0)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowDown){
+    shoot(0, 1)
+    lastFireTime = currentTime;
+  } else if (keys.ArrowUp){
+    shoot(0, -1)
+    lastFireTime = currentTime;
+  }
+  
+}
+  
+for (let i = mobProjectileList.length - 1; i >= 0; i--) {
+  let boolet = mobProjectileList[i];
+
+  boolet.MobProjUpdate();
+  if (
+    boolet.pos[0] < 0 ||
+    boolet.pos[0] > canvas.width ||
+    boolet.pos[1] < 0 ||
+    boolet.pos[1] > canvas.height
+  ) {
+    mobProjectileList.splice(i, 1);
+  }
+}
+  
 
   for (let i = projectileList.length - 1; i >= 0; i--) {
     let boolet = projectileList[i];
@@ -478,12 +506,13 @@ function Update() {
       projectileList.splice(i, 1);
     }
   }
-
+  if (monsterList){
   for (let mob of monsterList) {
     mob.mobUpdate();
   }
-  for (let a of bossList){
-    a.bossUpdate();
+}
+  for (let boss of bossList){
+    boss.bossUpdate();
   }
   player.playerUpdate();
   for (let i = projectileList.length - 1; i >= 0; i--) {
@@ -497,31 +526,10 @@ function Update() {
       ) {
         mob.hp -= 1
         projectileList.splice(i, 1);
-        console.log(mob.hp)
+        //console.log(mob.hp)
         if (mob.hp <= 0){
         monsterList.splice(j, 1);
         }
-        //monster.x = Math.random() * window.innerWidth
-        //monster.y = Math.random() * window.innerHeight
-
-        let rändöm = Math.floor(Math.random() * 4);
-        //console.log(rändöm);
-        switch (rändöm) {
-          case 0:
-            //monsterList.push(new monsters([0, canvas.height / 2], 2, 55, 55));
-            break;
-          case 1:
-            //monsterList.push(new monsters([canvas.width / 2, 0], 2, 55, 55));
-            break;
-          case 2:
-            //monsterList.push(
-              //new monsters([canvas.width, canvas.height / 2], 2, 55, 55));
-            break;
-          default:
-            //monsterList.push(
-            //  new monsters([canvas.width / 2, canvas.height], 2, 55, 55));
-        }
-
         score++;
       }
     }
@@ -559,7 +567,10 @@ function Draw() {
   //ctx.drawImage(zombieImage, monster.x, monster.y, monster.width, monster.height)
 
   for (let boolet of projectileList) {
-    boolet.Draw();
+    boolet.ProjDraw();
+  }
+  for (let ahmad of mobProjectileList){
+    ahmad.MobProjDraw();
   }
   for (let mob of monsterList) {
     mob.mobDraw();
