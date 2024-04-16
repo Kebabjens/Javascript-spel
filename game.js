@@ -326,43 +326,48 @@ class Mobprojectile {
     ctx.drawImage(mobProjImage, this.pos[0] + 20, this.pos[1] + 20);
   }
 }
-let bossList = [];
+
 let projectileList = [];
 let mobProjectileList = [];
 let monsterList = [];
+let L = 0;
 
 monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
 monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
 
+ let Daedalus;  
 function bossfight(){
-  bossList.push(new daidalos([-300, 300], 1.25, 200, 200, 20));
-  let L = 1;
-  let cd = 300;
-  let time = Date.now();
-  while (L > 0 ){
-    if(Date.now() - time > cd){
-      for (let a = -1; a <=1; a++){
-        for (let b = -1; b <=1; b++){
-          if (a != 0 || b != 0){
-          MobShoot(a, b);
-          }
-        }
+  
+  if (Daedalus == null){
+    Daedalus = new daidalos([300, 300], 1.25, 200, 200, 20);
+  }
+  
+  
+  if ( Daedalus.hp <= 0){
+    Daedalus = false
+  }
+}
+
+function phaseOne(){
+  for (let a = -1; a <=1; a++){
+    for (let b = -1; b <=1; b++){
+      if (a != 0 || b != 0){
+      MobShoot(a, b);
       }
-      L--; // Decrement L to eventually exit the loop
-      time = Date.now();
     }
   }
 }
 
 
-
 function mobSpawn(){
-  if (monsterList.length == 0 && bossList.length == 0){ 
+  if (monsterList.length == 0){ 
     
-    if (difficulty > 1){
+    if (difficulty > 2){
+  
       bossfight()
       //bossList.push(new daidalos([300, 300], 4, 200, 200))
-    }
+    
+  }
     
     //else{
       for (let a=0; a<(difficulty*3);a++){
@@ -409,13 +414,13 @@ function mobSpawn(){
 }
 }
 function MobShoot(dirx, diry){
-  let projSpeed = 8
+  let projSpeed = 6
   if(dirx == 0 || diry == 0){
-    mobProjectileList.push(new Mobprojectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed)
+    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], [dirx, diry], projSpeed)
     );
   }
   else{
-    mobProjectileList.push(new Mobprojectile([player.pos[0], player.pos[1]], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
+    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
   }
 }
 function shoot(dirx, diry){
@@ -478,6 +483,14 @@ function Update() {
   }
   
 }
+if (Daedalus != null){
+if (Daedalus.hp > 15 && L <= 0){
+  phaseOne();
+  L = 90
+}
+L--
+}
+
   
 for (let i = mobProjectileList.length - 1; i >= 0; i--) {
   let boolet = mobProjectileList[i];
@@ -511,9 +524,9 @@ for (let i = mobProjectileList.length - 1; i >= 0; i--) {
     mob.mobUpdate();
   }
 }
-  for (let boss of bossList){
-    boss.bossUpdate();
-  }
+if (Daedalus != null){
+  Daedalus.bossUpdate();
+}
   player.playerUpdate();
   for (let i = projectileList.length - 1; i >= 0; i--) {
     for (let j = monsterList.length - 1; j >= 0; j--) {
@@ -575,9 +588,10 @@ function Draw() {
   for (let mob of monsterList) {
     mob.mobDraw();
   }
-  for (let daedalus of bossList){
-    daedalus.bossDraw();
+  if (Daedalus){
+    Daedalus.bossDraw();
   }
+ 
   player.playerDraw();
   /*ctx.fillRect(300, 300, 50, 50);*/
   ctx.font = "25px serif";
