@@ -10,13 +10,18 @@ let mobProjImage = new Image(2,2);
 mobProjImage.src = "./bilder/mobSteen.png";
 let bossImage = new Image(2,2);
 bossImage.src = "./bilder/daidolos.png"
-/*let zombieImage = new Image(30,40);*/
-//zombieImage = "./bilder/zombie.png";
+let healthBar1 = new Image(2,2);
+healthBar1.src = "./bilder/healthbar1.png"
+let healthBar2 = new Image(2,2);
+healthBar2.src = "./bilder/healthbar2.png"
+let powerupsImage = new Image(2,2);
+powerupsImage.src = "./bilder/powerupFrame.png"
 const d = new Date();
 let ms = Date.now();
 //console.log(window.innerHeight);
 //console.log(window.innerWidth);
 let lastFireTime = 0;
+//let fireCooldown = 5;
 let fireCooldown = 225;
 let invincibleDuration = 0;
 
@@ -26,7 +31,7 @@ ctx.drawImage(image, 580, 250, 65, 65);
 /*ctx.fillRect(300, 300, 50, 50);*/
 let difficulty = 1
 let score = 0;
-let hp = 5;
+let hp = 15;
 let hearts = ""
 
 //ctx.drawImage(zombieImage, 300, 300, 50, 50)
@@ -101,7 +106,16 @@ for (let i = 1; i <= frameCountFast; i++) {
 
 //console.log(framesFast);
 //console.log(framesNormal);
-
+class Powerup {
+  constructor(pos, type, duration){
+    this.pos = pos;
+    this.type = type;
+    this.duration = duration
+  }
+  //PowerupDraw(
+    //ctx.drawImage(powerupsImage, this.pos[0], this.pos[1], 50, 50 )
+  //)
+}
 class Monsters {
   constructor(startPos, speed, width, height, img, hp ) {
     this.pos = startPos;
@@ -308,9 +322,11 @@ class projectile {
   }
 }
 class Mobprojectile {
-  constructor(startPos, dir, speed) {
+  constructor(startPos, dir, width, height, speed) {
     this.pos = startPos;
     this.dir = dir;
+    this.width = width;
+    this.height = height;
     this.speed = speed;
   }
 
@@ -330,7 +346,8 @@ class Mobprojectile {
 let projectileList = [];
 let mobProjectileList = [];
 let monsterList = [];
-let L = 0;
+let t1 = 0;
+let t2 = 0;
 
 monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
 monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
@@ -339,14 +356,13 @@ monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal"
 function bossfight(){
   
   if (Daedalus == null){
-    Daedalus = new daidalos([300, 300], 1.25, 200, 200, 20);
+    Daedalus = new daidalos([300, -100], 0.6, 200, 200, 50);
   }
   
   
-  if ( Daedalus.hp <= 0){
-    Daedalus = false
-  }
+  
 }
+
 
 function phaseOne(){
   for (let a = -1; a <=1; a++){
@@ -357,12 +373,17 @@ function phaseOne(){
     }
   }
 }
+function phaseTwo(){
+  monsterList.push(new Monsters([Daedalus.pos[0]+(Daedalus.width)/2 + 20, Daedalus.pos[1]+(Daedalus.height)/2], 1.5, 55, 55, "Normal", 2));
+  monsterList.push(new Monsters([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], 1.5, 55, 55, "Normal", 2));
+  monsterList.push(new Monsters([Daedalus.pos[0]+(Daedalus.width)/2 - 20, Daedalus.pos[1]+(Daedalus.height)/2], 2, 25, 45, "Fast", 2));
+}
 
 
 function mobSpawn(){
   if (monsterList.length == 0){ 
     
-    if (difficulty > 2){
+    if (difficulty == 1){
   
       bossfight()
       //bossList.push(new daidalos([300, 300], 4, 200, 200))
@@ -370,6 +391,7 @@ function mobSpawn(){
   }
     
     //else{
+    if(Daedalus == null){
       for (let a=0; a<(difficulty*3);a++){
       let rändöm = Math.floor(Math.random() * 4);
       //console.log(rändöm);
@@ -405,22 +427,24 @@ function mobSpawn(){
           monsterList.push(new Monsters([(canvas.width / 2) + Math.random()*500-250, canvas.height], 2.5, 25, 45, "Fast", 1));
       }
         }
-      
+      }
+      difficulty ++
   }
+  
     //}
     
-  difficulty ++
+  
 
 }
 }
 function MobShoot(dirx, diry){
   let projSpeed = 6
   if(dirx == 0 || diry == 0){
-    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], [dirx, diry], projSpeed)
+    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], [dirx, diry],25, 25, projSpeed)
     );
   }
   else{
-    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
+    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0]+(Daedalus.width)/2, Daedalus.pos[1]+(Daedalus.height)/2], [dirx, diry],25, 25, (Math.sqrt(2) / 2) * projSpeed));
   }
 }
 function shoot(dirx, diry){
@@ -441,11 +465,11 @@ function shoot(dirx, diry){
 }
 
 function Update() {
-  mobSpawn();
+  
 
   
   requestAnimationFrame(Update);
-  
+  mobSpawn();
 
   //Se till att spelaren inte kan röra sig utanför spelplanen
   player.pos[0] = Math.max(30, Math.min(canvas.width - 100, player.pos[0]));
@@ -484,11 +508,20 @@ function Update() {
   
 }
 if (Daedalus != null){
-if (Daedalus.hp > 15 && L <= 0){
+if (Daedalus.hp > 30 && t1 <= 0){
   phaseOne();
-  L = 90
+  t1 = 90
 }
-L--
+if (Daedalus.hp >10 && Daedalus.hp < 30 && t2 <= 0){
+  phaseTwo();
+  t2 = 240
+}
+t1--
+t2--
+if ( Daedalus.hp <= 0){
+  Daedalus = null
+  difficulty ++
+}
 }
 
   
@@ -519,14 +552,14 @@ for (let i = mobProjectileList.length - 1; i >= 0; i--) {
       projectileList.splice(i, 1);
     }
   }
-  if (monsterList){
-  for (let mob of monsterList) {
-    mob.mobUpdate();
+  if (monsterList) {
+    for (let mob of monsterList) {
+      mob.mobUpdate();
+    }
   }
-}
-if (Daedalus != null){
-  Daedalus.bossUpdate();
-}
+  if (Daedalus != null){
+    Daedalus.bossUpdate();
+  }
   player.playerUpdate();
   for (let i = projectileList.length - 1; i >= 0; i--) {
     for (let j = monsterList.length - 1; j >= 0; j--) {
@@ -542,13 +575,43 @@ if (Daedalus != null){
         //console.log(mob.hp)
         if (mob.hp <= 0){
         monsterList.splice(j, 1);
-        }
         score++;
+        rändöm = Math.floor(Math.random() * 20);
+        if (rändöm > 15){
+          powerup();
+        }
+        }
+        
       }
     }
   }
  
     //console.log(monsterList)
+  }
+  for (let i = mobProjectileList.length - 1; i >= 0; i--) {
+    if (mobProjectileList[i]) {
+      let mobBoolet = mobProjectileList[i];
+      if (
+        mobBoolet.pos[0] > player.pos[0] -30 &&
+        mobBoolet.pos[0] < player.pos[0] + player.width -30 &&
+        mobBoolet.pos[1] > player.pos[1] -30 &&
+        mobBoolet.pos[1] < player.pos[1] + player.height -30
+      ) {
+        hp -= 1;
+        mobProjectileList.splice(i, 1);
+      }
+    }
+  }
+  for (let i = projectileList.length - 1; i >= 0; i--) {
+    if(projectileList[i] && Daedalus != null){
+      let boolet = projectileList[i]
+      if(
+        boolet.pos[0] > Daedalus.pos[0] - 20 && boolet.pos[0] < Daedalus.pos[0] + Daedalus.width + 20 && boolet.pos[1] > Daedalus.pos[1] - 20 && boolet.pos[1] < Daedalus.pos[1] + Daedalus.height + 20
+      ){
+        Daedalus.hp -= 1
+        projectileList.splice(i, 1)
+      }
+    }
   }
   for (let j = monsterList.length - 1; j >= 0; j--) {
     let mob = monsterList[j]
@@ -572,12 +635,7 @@ function Draw() {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
-  ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${
-    Math.random() * 255
-  })`;
-  /*ctx.fillStyle = "blue";*/
   
-  //ctx.drawImage(zombieImage, monster.x, monster.y, monster.width, monster.height)
 
   for (let boolet of projectileList) {
     boolet.ProjDraw();
@@ -593,13 +651,15 @@ function Draw() {
   }
  
   player.playerDraw();
-  /*ctx.fillRect(300, 300, 50, 50);*/
   ctx.font = "25px serif";
   ctx.fillStyle = "#aaaaaa";
   ctx.fillText("Score: " + score, 50, 60);
   ctx.fillStyle = "#ff0000"
   ctx.font = "50px Courier New";
-
+  if (Daedalus != null){
+  ctx.drawImage(healthBar1, Daedalus.pos[0]+(Daedalus.width/2)-(192/2), Daedalus.pos[1]-50, 196, 24);
+  ctx.drawImage(healthBar2, Daedalus.pos[0]+(Daedalus.width/2)-(192/2)+3, Daedalus.pos[1]-47, 190*(Daedalus.hp/50), 18);
+  }
   hearts = ""
   for (let i = 0; i<hp; i++){
     hearts += "♥️";
