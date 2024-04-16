@@ -8,7 +8,7 @@ body{
 }
 canvas{
     border: 1px solid black;
-    background-image: url("bilder/bana.png");
+    background-image: url("bilder/banan.png");
     background-repeat: no-repeat;
     background-size: 100%;
 }
