@@ -16,6 +16,8 @@ let bossImage = new Image(2, 2);
 bossImage.src = "./bilder/daidolos.png";
 let deathImage = new Image(2, 2);
 deathImage.src = "./bilder/Zombie/normaldead.png";
+let fastdeathImage = new Image(2, 2);
+fastdeathImage.src = "./bilder/Zombie/fastdead.png";
 let healthBar1 = new Image(2, 2);
 healthBar1.src = "./bilder/healthbar1.png";
 let healthBar2 = new Image(2, 2);
@@ -358,12 +360,17 @@ class Monsters {
 }
 
 class Death {
-  constructor(pos, duration) {
+  constructor(pos, duration, type) {
     this.pos = pos;
     this.duration = duration;
+    this.type = type;
   }
   DeathDraw() {
-    ctx.drawImage(deathImage, this.pos[0], this.pos[1], 50, 50);
+    if (this.type == "Normal") {
+      ctx.drawImage(deathImage, this.pos[0], this.pos[1], 50, 50);
+    } else {
+      ctx.drawImage(fastdeathImage, this.pos[0], this.pos[1], 30, 20);
+    }
   }
 }
 function DeathUpdate() {
@@ -563,15 +570,31 @@ function shoot(dirx, diry) {
   if (dirx == 0 || diry == 0) {
     projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed));
     if (bulletShotgun == true && diry == 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.1], projSpeed / 1.05));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.1], projSpeed / 1.05));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.15], projSpeed / 1.05));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.15], projSpeed / 1.05));
     }
     if (bulletShotgun == true && dirx == 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.1, diry], projSpeed / 1.05));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.1, diry], projSpeed / 1.05));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.15, diry], projSpeed / 1.05));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.15, diry], projSpeed / 1.05));
     }
   } else {
     projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
+    if (bulletShotgun == true && diry > 0 && dirx > 0) {
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+    }
+    if (bulletShotgun == true && diry < 0 && dirx < 0) {
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+    }
+    if (bulletShotgun == true && diry > 0 && dirx < 0) {
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+    }
+    if (bulletShotgun == true && diry < 0 && dirx > 0) {
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+    }
   }
 }
 
@@ -719,7 +742,7 @@ function Update() {
                 break;
               default:
             }
-            DeathList.push(new Death([mob.pos[0], mob.pos[1]], 60));
+            DeathList.push(new Death([mob.pos[0], mob.pos[1]], 60, mob.img));
             monsterList.splice(j, 1);
             score++;
           }
