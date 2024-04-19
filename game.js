@@ -14,6 +14,8 @@ let mobProjImage = new Image(2, 2);
 mobProjImage.src = "./bilder/mobSteen.png";
 let bossImage = new Image(2, 2);
 bossImage.src = "./bilder/daidolos.png";
+let deathImage = new Image(2, 2);
+deathImage.src = "./bilder/Zombie/normaldead.png";
 let healthBar1 = new Image(2, 2);
 healthBar1.src = "./bilder/healthbar1.png";
 let healthBar2 = new Image(2, 2);
@@ -54,6 +56,9 @@ let numOfPowerUps = 0;
 let dx = 0;
 let dy = 0;
 let AA = 0;
+
+let shootDirX = 0;
+let shootDirY = 0;
 
 //ctx.drawImage(zombieImage, 300, 300, 50, 50)
 
@@ -188,17 +193,6 @@ function PowerupUpdate() {
       }
     }
   }
-}
-function PowerUpCheck(type) {
-  let check = false;
-  for (let i = activePowerUps.length - 1; i >= 0; i--) {
-    let power = activePowerUps[i];
-    if (power.type == type) {
-      check = true;
-    }
-  }
-
-  return check;
 }
 
 function ActivePowerUps() {
@@ -362,6 +356,27 @@ class Monsters {
     return this.pos[0] < otherMob.pos[0] + otherMob.width - overlap && this.pos[0] + this.width + overlap > otherMob.pos[0] && this.pos[1] < otherMob.pos[1] + otherMob.height - overlap && this.pos[1] + this.height > otherMob.pos[1] + overlap;
   }
 }
+
+class Death {
+  constructor(pos, duration) {
+    this.pos = pos;
+    this.duration = duration;
+  }
+  DeathDraw() {
+    ctx.drawImage(deathImage, this.pos[0], this.pos[1], 50, 50);
+  }
+}
+function DeathUpdate() {
+  if (DeathList) {
+    for (let i = DeathList.length - 1; i >= 0; i--) {
+      if (DeathList[i].duration <= 0) {
+        DeathList.splice(i, 1);
+      } else {
+        DeathList[i].duration--;
+      }
+    }
+  }
+}
 class daidalos {
   constructor(pos, speed, height, width, hp) {
     this.pos = pos;
@@ -424,6 +439,8 @@ class Mobprojectile {
     this.width = width;
     this.height = height;
     this.speed = speed;
+
+    this.hp = hp;
   }
 
   MobProjUpdate() {
@@ -441,6 +458,7 @@ let mobProjectileList = [];
 let monsterList = [];
 let powerUpList = [];
 let activePowerUps = [];
+let DeathList = [];
 let t1 = 0;
 let t2 = 0;
 let t3 = 0;
@@ -596,29 +614,24 @@ function Update() {
   Monsters.height = 55;
   let currentTime = Date.now();
   if (currentTime - lastFireTime > fireCooldown) {
-    if (keys.ArrowRight && keys.ArrowDown) {
-      shoot(1, 1);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowRight && keys.ArrowUp) {
-      shoot(1, -1);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowRight) {
-      shoot(1, 0);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowLeft && keys.ArrowDown) {
-      shoot(-1, 1);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowLeft && keys.ArrowUp) {
-      shoot(-1, -1);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowLeft) {
-      shoot(-1, 0);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowDown) {
-      shoot(0, 1);
-      lastFireTime = currentTime;
-    } else if (keys.ArrowUp) {
-      shoot(0, -1);
+    if (keys.arrowright) {
+      shootDirX++;
+    }
+    if (keys.arrowleft) {
+      shootDirX--;
+    }
+    if (keys.arrowdown) {
+      shootDirY++;
+    }
+    if (keys.arrowup) {
+      shootDirY--;
+    }
+    if (shootDirX == 0 && shootDirY == 0) {
+      console.log("huuuu");
+    } else {
+      shoot(shootDirX, shootDirY);
+      shootDirX = 0;
+      shootDirY = 0;
       lastFireTime = currentTime;
     }
   }
@@ -673,7 +686,7 @@ function Update() {
     PowerupUpdate();
   }
   ActivePowerUps();
-
+  DeathUpdate();
   player.playerUpdate();
   for (let i = projectileList.length - 1; i >= 0; i--) {
     for (let j = monsterList.length - 1; j >= 0; j--) {
@@ -682,7 +695,9 @@ function Update() {
         let mob = monsterList[j];
 
         if (boolet.pos[0] > mob.pos[0] - 20 && boolet.pos[0] < mob.pos[0] + mob.width + 20 && boolet.pos[1] > mob.pos[1] - 20 && boolet.pos[1] < mob.pos[1] + mob.height + 20) {
-          projectileList.splice(i, 1);
+          if (bulletPenetration == false) {
+            projectileList.splice(i, 1);
+          }
           mob.hp -= 1;
           if (mob.hp <= 0) {
             let rändöm = Math.floor(Math.random() * 50);
@@ -704,6 +719,7 @@ function Update() {
                 break;
               default:
             }
+            DeathList.push(new Death([mob.pos[0], mob.pos[1]], 60));
             monsterList.splice(j, 1);
             score++;
           }
@@ -764,6 +780,9 @@ function Draw() {
   for (let power of powerUpList) {
     power.PowerupDraw();
   }
+  for (let dead of DeathList) {
+    dead.DeathDraw();
+  }
   ActtivePowerUpDraw();
 
   player.playerDraw();
@@ -797,10 +816,10 @@ function gameLoop() {
 
 const keys = {};
 window.addEventListener("keydown", (event) => {
-  keys[event.key] = true;
+  keys[event.key.toLowerCase()] = true;
 });
 window.addEventListener("keyup", (event) => {
-  keys[event.key] = false;
+  keys[event.key.toLowerCase()] = false;
 });
 
 gameLoop();
