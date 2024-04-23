@@ -11,7 +11,7 @@ const zombieImage = document.getElementById("zombie");
 let projImage = new Image(2, 2);
 projImage.src = "./bilder/steen.png";
 let mobProjImage = new Image(2, 2);
-mobProjImage.src = "./bilder/mobSteen.png";
+mobProjImage.src = "./bilder/mobSteen2.png";
 let bossImage = new Image(2, 2);
 bossImage.src = "./bilder/daidolos.png";
 let deathImage = new Image(2, 2);
@@ -34,6 +34,8 @@ let attackspeedImg = new Image(2, 2);
 attackspeedImg.src = "./bilder/attackspeed.png";
 let penetrationImg = new Image(2, 2);
 penetrationImg.src = "./bilder/penetration.png";
+let coinImg = new Image(2, 2);
+coinImg.src = "./bilder/Dullar.png";
 const d = new Date();
 let ms = Date.now();
 //console.log(window.innerHeight);
@@ -55,6 +57,8 @@ let hearts = "";
 let alive = true;
 let numOfPowerUps = 0;
 let bullethp = 1;
+let victory = false;
+let money = 0;
 
 let dx = 0;
 let dy = 0;
@@ -62,8 +66,6 @@ let AA = 0;
 
 let shootDirX = 0;
 let shootDirY = 0;
-
-//ctx.drawImage(zombieImage, 300, 300, 50, 50)
 
 class players {
   constructor(pos, speed, width, height) {
@@ -230,6 +232,9 @@ function ActivePowerUps() {
 }
 
 function PowerupApply(type) {
+  if (type == coinImg) {
+    money++;
+  }
   if (type == heartImg) {
     hp++;
   }
@@ -394,6 +399,7 @@ class Particles {
     this.pos = pos;
     this.duration = duration;
     this.dir = dir;
+    this.color = ctx.fillStyle = `rgb(${255 - Math.floor(Math.random() * 100)}, 0 ,0)`;
     this.speed = speed * Math.floor(Math.random() * 2.8);
     this.size = Math.floor(Math.random() * 7);
   }
@@ -413,7 +419,7 @@ class daidalos {
     this.height = height;
     this.width = width;
     this.hp = hp;
-    this.difficulty;
+    this.difficulty = difficulty;
 
     this.targetPos = [0, 0];
     this.findTargetTime = 0;
@@ -481,6 +487,11 @@ class Mobprojectile {
   }
 
   MobProjDraw() {
+    if (this.type == "easy") {
+      mobProjImage.src = "./bilder/mobSteen2.png";
+    } else {
+      mobProjImage.src = "./bilder/mobSteen.png";
+    }
     ctx.drawImage(mobProjImage, this.pos[0] + 20, this.pos[1] + 20);
   }
 }
@@ -500,10 +511,9 @@ monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal"
 monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
 
 let Daedalus;
-function bossfight(hardmän) {
-  console.log(hardmän);
+function bossfight(difficulty) {
   if (Daedalus == null) {
-    Daedalus = new daidalos([300, -100], 0.6, 200, 200, 100, hardmän);
+    Daedalus = new daidalos([300, -100], 0.6, 200, 200, 100, difficulty);
   }
 }
 
@@ -521,17 +531,15 @@ function phaseTwo() {
   monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 1.5, 55, 55, "Normal", 2));
   monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2 - 20, Daedalus.pos[1] + Daedalus.height / 2], 2, 25, 45, "Fast", 2));
 }
-function phaseThree() {
+function phaseThree(difficulty) {
   dx = player.pos[0] + player.width / 2 - Daedalus.pos[0] + Daedalus.width / 2 - 200;
   dy = player.pos[1] + player.height / 2 - Daedalus.pos[1] + Daedalus.height / 2 - 200;
-  console.log(`dx: ${dx}, dy: ${dy}`);
   AA = Math.sqrt(dx ** 2 + dy ** 2);
-
-  mobProjectileList.push(new Mobprojectile([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], [dx / AA, dy / AA], 25, 25, 10));
+  mobProjectileList.push(new Mobprojectile([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], [dx / AA, dy / AA], 25, 25, 10, difficulty));
 }
 
 function mobSpawn() {
-  if (monsterList.length == 0) {
+  if (monsterList.length == 0 && difficulty < 12) {
     if (difficulty == 6) {
       bossfight("easy");
       //bossList.push(new daidalos([300, 300], 4, 200, 200))
@@ -582,6 +590,8 @@ function mobSpawn() {
     }
 
     //}
+  } else if (monsterList == 0 && difficulty == 12) {
+    victory = true;
   }
 }
 function MobShoot(dirx, diry, difficulty) {
@@ -745,6 +755,9 @@ function Update() {
   for (let particleIndex in particleList) {
     const particle = particleList[particleIndex];
     if (particle.duration < 0) {
+      particle.speed = 0;
+    }
+    if (particle.duration < -600) {
       particleList.splice(particleIndex, 1);
     } else {
       particle.particleUpdate();
@@ -768,6 +781,9 @@ function Update() {
           mob.hp--;
           if (mob.hp <= 0) {
             let rändöm = Math.floor(Math.random() * 50);
+            if (rändöm > 30 && rändöm < 40) {
+              powerUpList.push(new Powerup(mob.pos, coinImg, 600));
+            }
             switch (rändöm) {
               case 45:
                 powerUpList.push(new Powerup(mob.pos, heartImg, 600));
@@ -840,7 +856,10 @@ function Draw() {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
-
+  for (let particle of particleList) {
+    ctx.fillStyle = particle.color;
+    particle.particleDraw();
+  }
   for (let boolet of projectileList) {
     boolet.ProjDraw();
   }
@@ -860,14 +879,10 @@ function Draw() {
     dead.DeathDraw();
   }
   ActivePowerUpDraw();
-  for (let particle of particleList) {
-    particle.particleDraw();
-  }
 
   player.playerDraw();
   ctx.font = "25px serif";
-  ctx.fillStyle = "#aaaaaa";
-  /*ctx.fillText("Score: " + score, 50, 60);*/
+
   ctx.fillStyle = "#ff0000";
 
   ctx.font = "50px Courier New";
@@ -882,9 +897,13 @@ function Draw() {
   }
   ctx.fillText(hearts, canvas.width / 2 - hp * 13, 35);
   ctx.font = "100px";
+  ctx.fillStyle = "black";
+  ctx.fillText(`Money: ${money}`, 800, 200);
   if (hp <= 0) {
     alive = false;
     ctx.fillText("You Died", 300, 300);
+  } else if (victory == true) {
+    ctx.fillText("You win, GG!", 300, 300);
   }
   requestAnimationFrame(Draw);
 }
