@@ -54,6 +54,7 @@ let hp = 5;
 let hearts = "";
 let alive = true;
 let numOfPowerUps = 0;
+let bullethp = 1;
 
 let dx = 0;
 let dy = 0;
@@ -115,7 +116,9 @@ class players {
       }
       player.currentTime = Date.now();
     }
-    ctx.drawImage(player.frames[player.frameIndex], player.pos[0], player.pos[1], 65, 65);
+    if (invincibleDuration <= 0 || Math.floor(invincibleDuration / 8) % 2 == 0) {
+      ctx.drawImage(player.frames[player.frameIndex], player.pos[0], player.pos[1], 65, 65);
+    }
   }
 }
 
@@ -152,11 +155,13 @@ class Powerup {
   }
 
   PowerupDraw() {
-    ctx.drawImage(this.type, this.pos[0], this.pos[1], 50, 50);
+    if (this.duration > 150 || Math.floor(this.duration / 15) % 2 == 0) {
+      ctx.drawImage(this.type, this.pos[0], this.pos[1], 50, 50);
+    }
   }
 }
 
-function ActtivePowerUpDraw() {
+function ActivePowerUpDraw() {
   numOfPowerUps = 0;
   if (player.PowerUpsActive.speed == true) {
     ctx.drawImage(powerupsImage, 20, 20, 60, 60);
@@ -384,13 +389,31 @@ function DeathUpdate() {
     }
   }
 }
+class Particles {
+  constructor(pos, duration, dir, speed) {
+    this.pos = pos;
+    this.duration = duration;
+    this.dir = dir;
+    this.speed = speed * Math.floor(Math.random() * 2.8);
+    this.size = Math.floor(Math.random() * 7);
+  }
+  particleUpdate() {
+    this.pos[0] += this.speed * this.dir[0];
+    this.pos[1] += this.speed * this.dir[1];
+    this.duration--;
+  }
+  particleDraw() {
+    ctx.fillRect(this.pos[0], this.pos[1], this.size, this.size);
+  }
+}
 class daidalos {
-  constructor(pos, speed, height, width, hp) {
+  constructor(pos, speed, height, width, hp, difficulty) {
     this.pos = pos;
     this.speed = speed;
     this.height = height;
     this.width = width;
     this.hp = hp;
+    this.difficulty;
 
     this.targetPos = [0, 0];
     this.findTargetTime = 0;
@@ -424,10 +447,11 @@ class daidalos {
   }
 }
 class projectile {
-  constructor(startPos, dir, speed) {
+  constructor(startPos, dir, speed, hp) {
     this.pos = startPos;
     this.dir = dir;
     this.speed = speed;
+    this.hp = hp;
   }
 
   ProjUpdate() {
@@ -440,12 +464,13 @@ class projectile {
   }
 }
 class Mobprojectile {
-  constructor(startPos, dir, width, height, speed) {
+  constructor(startPos, dir, width, height, speed, type) {
     this.pos = startPos;
     this.dir = dir;
     this.width = width;
     this.height = height;
     this.speed = speed;
+    this.type = type;
 
     this.hp = hp;
   }
@@ -466,6 +491,7 @@ let monsterList = [];
 let powerUpList = [];
 let activePowerUps = [];
 let DeathList = [];
+let particleList = [];
 let t1 = 0;
 let t2 = 0;
 let t3 = 0;
@@ -474,17 +500,18 @@ monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal"
 monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
 
 let Daedalus;
-function bossfight() {
+function bossfight(hardmän) {
+  console.log(hardmän);
   if (Daedalus == null) {
-    Daedalus = new daidalos([300, -100], 0.6, 200, 200, 100);
+    Daedalus = new daidalos([300, -100], 0.6, 200, 200, 100, hardmän);
   }
 }
 
-function phaseOne() {
+function phaseOne(difficulty) {
   for (let a = -1; a <= 1; a++) {
     for (let b = -1; b <= 1; b++) {
       if (a != 0 || b != 0) {
-        MobShoot(a, b);
+        MobShoot(a, b, difficulty);
       }
     }
   }
@@ -506,8 +533,11 @@ function phaseThree() {
 function mobSpawn() {
   if (monsterList.length == 0) {
     if (difficulty == 6) {
-      bossfight();
+      bossfight("easy");
       //bossList.push(new daidalos([300, 300], 4, 200, 200))
+    } else if (difficulty == 11) {
+      bossImage.src = "./bilder/daidolosElak.png";
+      bossfight("hardmän");
     }
 
     //else{
@@ -554,46 +584,46 @@ function mobSpawn() {
     //}
   }
 }
-function MobShoot(dirx, diry) {
+function MobShoot(dirx, diry, difficulty) {
   let projSpeed = 6;
   if (dirx == 0 || diry == 0) {
-    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], [dirx, diry], 25, 25, projSpeed));
+    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], [dirx, diry], 25, 25, projSpeed, difficulty));
   } else {
-    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], [dirx, diry], 25, 25, (Math.sqrt(2) / 2) * projSpeed));
+    mobProjectileList.push(new Mobprojectile([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], [dirx, diry], 25, 25, (Math.sqrt(2) / 2) * projSpeed, difficulty));
   }
 }
 function shoot(dirx, diry) {
   let projSpeed = 15;
 
-  //Attack
-
   if (dirx == 0 || diry == 0) {
-    projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed));
+    //Attack
+
+    projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed, bullethp));
     if (bulletShotgun == true && diry == 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.15], projSpeed / 1.05));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.15], projSpeed / 1.05));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.15], projSpeed / 1.05, bullethp));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.15], projSpeed / 1.05, bullethp));
     }
     if (bulletShotgun == true && dirx == 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.15, diry], projSpeed / 1.05));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.15, diry], projSpeed / 1.05));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.15, diry], projSpeed / 1.05, bullethp));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.15, diry], projSpeed / 1.05, bullethp));
     }
   } else {
-    projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed));
+    projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], (Math.sqrt(2) / 2) * projSpeed, bullethp));
     if (bulletShotgun == true && diry > 0 && dirx > 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
     }
     if (bulletShotgun == true && diry < 0 && dirx < 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
     }
     if (bulletShotgun == true && diry > 0 && dirx < 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry + 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx - 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
     }
     if (bulletShotgun == true && diry < 0 && dirx > 0) {
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88));
-      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry - 0.25], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
+      projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx + 0.25, diry], (Math.sqrt(2) / 2) * projSpeed * 0.88, bullethp));
     }
   }
 }
@@ -617,9 +647,9 @@ function Update() {
   }
 
   if (player.PowerUpsActive.penetration == true) {
-    bulletPenetration = true;
+    bullethp = 3;
   } else {
-    bulletPenetration = false;
+    bullethp = 1;
   }
 
   if (player.PowerUpsActive.shotgun == true) {
@@ -650,7 +680,6 @@ function Update() {
       shootDirY--;
     }
     if (shootDirX == 0 && shootDirY == 0) {
-      console.log("huuuu");
     } else {
       shoot(shootDirX, shootDirY);
       shootDirX = 0;
@@ -660,7 +689,7 @@ function Update() {
   }
   if (Daedalus != null) {
     if ((Daedalus.hp < 25 || (Daedalus.hp < 75 && Daedalus.hp > 50)) && t1 <= 0) {
-      phaseOne();
+      phaseOne(Daedalus.difficulty);
       t1 = 90;
     }
     if (Daedalus.hp % 5 == 0 && t2 <= 0) {
@@ -668,13 +697,16 @@ function Update() {
       t2 = 200;
     }
     if ((Daedalus.hp < 25 || (Daedalus.hp < 100 && Daedalus.hp > 75)) && t3 <= 0) {
-      phaseThree();
+      phaseThree(Daedalus.difficulty);
       t3 = 20;
     }
     t1--;
     t2--;
     t3--;
     if (Daedalus.hp <= 0) {
+      for (let i = 0; i < 875; i++) {
+        particleList.push(new Particles([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 100, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+      }
       Daedalus = null;
       difficulty++;
     }
@@ -710,6 +742,14 @@ function Update() {
   }
   ActivePowerUps();
   DeathUpdate();
+  for (let particleIndex in particleList) {
+    const particle = particleList[particleIndex];
+    if (particle.duration < 0) {
+      particleList.splice(particleIndex, 1);
+    } else {
+      particle.particleUpdate();
+    }
+  }
   player.playerUpdate();
   for (let i = projectileList.length - 1; i >= 0; i--) {
     for (let j = monsterList.length - 1; j >= 0; j--) {
@@ -718,10 +758,14 @@ function Update() {
         let mob = monsterList[j];
 
         if (boolet.pos[0] > mob.pos[0] - 20 && boolet.pos[0] < mob.pos[0] + mob.width + 20 && boolet.pos[1] > mob.pos[1] - 20 && boolet.pos[1] < mob.pos[1] + mob.height + 20) {
-          if (bulletPenetration == false) {
+          boolet.hp--;
+          if (boolet.hp <= 0) {
             projectileList.splice(i, 1);
           }
-          mob.hp -= 1;
+          for (let i = 0; i < 25; i++) {
+            particleList.push(new Particles([mob.pos[0] + mob.width / 2, mob.pos[1] + mob.height / 2], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+          }
+          mob.hp--;
           if (mob.hp <= 0) {
             let rändöm = Math.floor(Math.random() * 50);
             switch (rändöm) {
@@ -743,6 +787,9 @@ function Update() {
               default:
             }
             DeathList.push(new Death([mob.pos[0], mob.pos[1]], 60, mob.img));
+            for (let i = 0; i < 75; i++) {
+              particleList.push(new Particles([mob.pos[0] + mob.width / 2, mob.pos[1] + mob.height / 2], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+            }
             monsterList.splice(j, 1);
             score++;
           }
@@ -756,8 +803,11 @@ function Update() {
     if (mobProjectileList[i]) {
       let mobBoolet = mobProjectileList[i];
       if (mobBoolet.pos[0] > player.pos[0] - 30 && mobBoolet.pos[0] < player.pos[0] + player.width - 30 && mobBoolet.pos[1] > player.pos[1] - 30 && mobBoolet.pos[1] < player.pos[1] + player.height - 30) {
-        hp -= 1;
-        mobProjectileList.splice(i, 1);
+        if (invincibleDuration < 0) {
+          hp--;
+          mobProjectileList.splice(i, 1);
+          invincibleDuration = 120;
+        }
       }
     }
   }
@@ -765,6 +815,9 @@ function Update() {
     if (projectileList[i] && Daedalus != null) {
       let boolet = projectileList[i];
       if (boolet.pos[0] > Daedalus.pos[0] - 20 && boolet.pos[0] < Daedalus.pos[0] + Daedalus.width + 20 && boolet.pos[1] > Daedalus.pos[1] - 20 && boolet.pos[1] < Daedalus.pos[1] + Daedalus.height + 20) {
+        for (let i = 0; i < 25; i++) {
+          particleList.push(new Particles([boolet.pos[0], boolet.pos[1]], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+        }
         Daedalus.hp -= 1;
 
         projectileList.splice(i, 1);
@@ -776,7 +829,7 @@ function Update() {
     if (player.pos[0] > mob.pos[0] - 5 && player.pos[0] < mob.pos[0] + mob.width + 5 && player.pos[1] > mob.pos[1] - 5 && player.pos[1] < mob.pos[1] + mob.height + 5) {
       if (invincibleDuration < 0) {
         hp--;
-        invincibleDuration = 50;
+        invincibleDuration = 120;
       }
     }
   }
@@ -806,7 +859,10 @@ function Draw() {
   for (let dead of DeathList) {
     dead.DeathDraw();
   }
-  ActtivePowerUpDraw();
+  ActivePowerUpDraw();
+  for (let particle of particleList) {
+    particle.particleDraw();
+  }
 
   player.playerDraw();
   ctx.font = "25px serif";
