@@ -59,6 +59,8 @@ let numOfPowerUps = 0;
 let bullethp = 1;
 let victory = false;
 let money = 0;
+let teleporter = null;
+let timer = 300;
 
 let dx = 0;
 let dy = 0;
@@ -144,8 +146,55 @@ for (let i = 1; i <= frameCountFast; i++) {
   framesFast.push(frame);
 }
 
+let frameTime = 20;
+let teleporterframeIndex = 0;
+
+class Teleporter {
+  constructor(pos) {
+    this.pos = pos;
+    this.width = 70;
+    this.height = 70;
+
+    this.frames = [];
+    this.frameCount = 3;
+
+    for (let i = 0; i < this.frameCount; i++) {
+      let frame = new Image();
+      frame.src = `./bilder/teleport/pixil-frame-${i}.png`;
+      this.frames.push(frame);
+    }
+  }
+
+  TeleporterDraw() {
+    if (frameTime < 0) {
+      frameTime = 20;
+      teleporterframeIndex++;
+      if (teleporterframeIndex == 3) {
+        teleporterframeIndex = 0;
+      }
+    }
+    frameTime--;
+    ctx.drawImage(this.frames[teleporterframeIndex], this.pos[0], this.pos[1], this.width, this.height);
+  }
+  TeleporterUpdate() {
+    if (this.pos[0] < player.pos[0] + 60 && this.pos[0] > player.pos[0] - player.width && this.pos[1] < player.pos[1] + 60 && this.pos[1] > player.pos[1] - player.height) {
+      canvas.style.backgroundImage = "url('./bilder/bananShop.png')";
+      player.pos[0] = canvas.width / 2 - 25;
+      player.pos[1] = 100;
+      victory = false;
+    }
+  }
+}
 //console.log(framesFast);
 //console.log(framesNormal);
+class Vendor {
+  constructor(pos) {
+    this.pos = pos;
+
+    this.width = 50;
+    this.height = 50;
+  }
+}
 class Powerup {
   constructor(pos, type, duration) {
     this.pos = pos;
@@ -700,22 +749,34 @@ function Update() {
   if (Daedalus != null) {
     if ((Daedalus.hp < 25 || (Daedalus.hp < 75 && Daedalus.hp > 50)) && t1 <= 0) {
       phaseOne(Daedalus.difficulty);
-      t1 = 90;
+      if (Daedalus.difficulty == "easy") {
+        t1 = 95;
+      } else {
+        t1 = 75;
+      }
     }
     if (Daedalus.hp % 5 == 0 && t2 <= 0) {
       phaseTwo();
-      t2 = 200;
+      if (Daedalus.difficulty == "easy") {
+        t2 = 225;
+      } else {
+        t2 = 175;
+      }
     }
     if ((Daedalus.hp < 25 || (Daedalus.hp < 100 && Daedalus.hp > 75)) && t3 <= 0) {
       phaseThree(Daedalus.difficulty);
-      t3 = 20;
+      if (Daedalus.difficulty == "easy") {
+        t3 = 25;
+      } else {
+        t3 = 20;
+      }
     }
     t1--;
     t2--;
     t3--;
     if (Daedalus.hp <= 0) {
       for (let i = 0; i < 875; i++) {
-        particleList.push(new Particles([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 100, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+        particleList.push(new Particles([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 100, [Math.random() * 2 - 1, Math.random() * 2 - 1], 3));
       }
       Daedalus = null;
       difficulty++;
@@ -752,12 +813,15 @@ function Update() {
   }
   ActivePowerUps();
   DeathUpdate();
+  if (teleporter != null) {
+    teleporter.TeleporterUpdate();
+  }
   for (let particleIndex in particleList) {
     const particle = particleList[particleIndex];
     if (particle.duration < 0) {
       particle.speed = 0;
     }
-    if (particle.duration < -600) {
+    if (particle.duration < -120) {
       particleList.splice(particleIndex, 1);
     } else {
       particle.particleUpdate();
@@ -776,35 +840,37 @@ function Update() {
             projectileList.splice(i, 1);
           }
           for (let i = 0; i < 25; i++) {
-            particleList.push(new Particles([mob.pos[0] + mob.width / 2, mob.pos[1] + mob.height / 2], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+            particleList.push(new Particles([mob.pos[0] + mob.width / 2, mob.pos[1] + mob.height / 2], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 4));
           }
           mob.hp--;
           if (mob.hp <= 0) {
-            let rändöm = Math.floor(Math.random() * 50);
-            if (rändöm > 30 && rändöm < 40) {
+            let rändöm = Math.floor(Math.random() * 25);
+            console.log(rändöm);
+            if (rändöm < 4) {
               powerUpList.push(new Powerup(mob.pos, coinImg, 600));
-            }
-            switch (rändöm) {
-              case 45:
-                powerUpList.push(new Powerup(mob.pos, heartImg, 600));
-                break;
-              case 46:
-                powerUpList.push(new Powerup(mob.pos, speedImg, 600));
-                break;
-              case 47:
-                powerUpList.push(new Powerup(mob.pos, shotgunImg, 600));
-                break;
-              case 48:
-                powerUpList.push(new Powerup(mob.pos, attackspeedImg, 600));
-                break;
-              case 49:
-                powerUpList.push(new Powerup(mob.pos, penetrationImg, 600));
-                break;
-              default:
+            } else if (rändöm == 24) {
+              rändöm = Math.floor(Math.random() * 7);
+
+              switch (rändöm) {
+                case 1:
+                  powerUpList.push(new Powerup(mob.pos, shotgunImg, 600));
+                  break;
+                case 2:
+                  powerUpList.push(new Powerup(mob.pos, speedImg, 600));
+                  break;
+                case 3:
+                  powerUpList.push(new Powerup(mob.pos, penetrationImg, 600));
+                  break;
+                case 4:
+                  powerUpList.push(new Powerup(mob.pos, attackspeedImg, 600));
+                  break;
+                default:
+                  powerUpList.push(new Powerup(mob.pos, heartImg, 600));
+              }
             }
             DeathList.push(new Death([mob.pos[0], mob.pos[1]], 60, mob.img));
             for (let i = 0; i < 75; i++) {
-              particleList.push(new Particles([mob.pos[0] + mob.width / 2, mob.pos[1] + mob.height / 2], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+              particleList.push(new Particles([mob.pos[0] + mob.width / 2, mob.pos[1] + mob.height / 2], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 3));
             }
             monsterList.splice(j, 1);
             score++;
@@ -832,7 +898,7 @@ function Update() {
       let boolet = projectileList[i];
       if (boolet.pos[0] > Daedalus.pos[0] - 20 && boolet.pos[0] < Daedalus.pos[0] + Daedalus.width + 20 && boolet.pos[1] > Daedalus.pos[1] - 20 && boolet.pos[1] < Daedalus.pos[1] + Daedalus.height + 20) {
         for (let i = 0; i < 25; i++) {
-          particleList.push(new Particles([boolet.pos[0], boolet.pos[1]], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 5));
+          particleList.push(new Particles([boolet.pos[0], boolet.pos[1]], 10, [Math.random() * 2 - 1, Math.random() * 2 - 1], 3));
         }
         Daedalus.hp -= 1;
 
@@ -881,6 +947,9 @@ function Draw() {
   ActivePowerUpDraw();
 
   player.playerDraw();
+  if (teleporter != null) {
+    teleporter.TeleporterDraw();
+  }
   ctx.font = "25px serif";
 
   ctx.fillStyle = "#ff0000";
@@ -896,14 +965,21 @@ function Draw() {
     hearts += "♥️";
   }
   ctx.fillText(hearts, canvas.width / 2 - hp * 13, 35);
-  ctx.font = "100px";
+  ctx.font = "30px Arial";
   ctx.fillStyle = "black";
-  ctx.fillText(`Money: ${money}`, 800, 200);
+  ctx.fillText(`Money: ${money}`, 950, 30);
   if (hp <= 0) {
     alive = false;
     ctx.fillText("You Died", 300, 300);
   } else if (victory == true) {
-    ctx.fillText("You win, GG!", 300, 300);
+    if (timer > 0) {
+      ctx.fillText("You win, GG!", 300, 300);
+    }
+    timer--;
+
+    if (teleporter == null) {
+      teleporter = new Teleporter([canvas.width / 2 - -35 / 2, canvas.height - 80]);
+    }
   }
   requestAnimationFrame(Draw);
 }
