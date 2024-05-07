@@ -36,6 +36,8 @@ let penetrationImg = new Image(2, 2);
 penetrationImg.src = "./bilder/penetration.png";
 let coinImg = new Image(2, 2);
 coinImg.src = "./bilder/Dullar.png";
+let kiosk = new Image(2, 2);
+kiosk.src = "./bilder/grabb.png";
 const d = new Date();
 let ms = Date.now();
 //console.log(window.innerHeight);
@@ -52,7 +54,7 @@ ctx.drawImage(image, 580, 250, 65, 65);
 /*ctx.fillRect(300, 300, 50, 50);*/
 let difficulty = 1;
 let score = 0;
-let hp = 5;
+let hp = 10;
 let hearts = "";
 let alive = true;
 let numOfPowerUps = 0;
@@ -60,7 +62,11 @@ let bullethp = 1;
 let victory = false;
 let money = 0;
 let teleporter = null;
+let kioskman = null;
 let timer = 300;
+let monstersLeft = 100;
+let mobCooldown = 60;
+let world = 1;
 
 let dx = 0;
 let dy = 0;
@@ -178,10 +184,23 @@ class Teleporter {
   }
   TeleporterUpdate() {
     if (this.pos[0] < player.pos[0] + 60 && this.pos[0] > player.pos[0] - player.width && this.pos[1] < player.pos[1] + 60 && this.pos[1] > player.pos[1] - player.height) {
-      canvas.style.backgroundImage = "url('./bilder/bananShop.png')";
-      player.pos[0] = canvas.width / 2 - 25;
-      player.pos[1] = 100;
-      victory = false;
+      if (world == 2) {
+        kioskman = null;
+        world = 3;
+        teleporter = null;
+        victory = false;
+        monstersLeft = 100;
+        canvas.style.backgroundImage = "url('./bilder/isbanan.png')";
+        player.pos[0] = canvas.width / 2 - 25;
+        player.pos[1] = 100;
+      }
+      if (world == 1) {
+        kioskman = new Vendor([900, 345]);
+        world = 2;
+        canvas.style.backgroundImage = "url('./bilder/bananShop.png')";
+        player.pos[0] = canvas.width / 2 - 25;
+        player.pos[1] = 100;
+      }
     }
   }
 }
@@ -193,6 +212,9 @@ class Vendor {
 
     this.width = 50;
     this.height = 50;
+  }
+  VendorDraw() {
+    ctx.drawImage(kiosk, this.pos[0], this.pos[1], 75, 75);
   }
 }
 class Powerup {
@@ -588,58 +610,46 @@ function phaseThree(difficulty) {
 }
 
 function mobSpawn() {
-  if (monsterList.length == 0 && difficulty < 12) {
-    if (difficulty == 6) {
+  if (Daedalus == null) {
+    if (monstersLeft == 51) {
       bossfight("easy");
-      //bossList.push(new daidalos([300, 300], 4, 200, 200))
-    } else if (difficulty == 11) {
+      monstersLeft--;
+    } else if (monstersLeft == 1) {
       bossImage.src = "./bilder/daidolosElak.png";
       bossfight("hardmän");
+      monstersLeft--;
     }
+  }
 
-    //else{
-    if (Daedalus == null) {
-      for (let a = 0; a < difficulty * 3; a++) {
-        let rändöm = Math.floor(Math.random() * 4);
-        //console.log(rändöm);
+  if (Daedalus == null && monstersLeft > 0) {
+    if (mobCooldown <= 0) {
+      let rändöm = Math.floor(Math.random() * 2);
+      switch (rändöm) {
+        case 0:
+          monsterList.push(new Monsters([Math.floor(Math.random() * 2) * canvas.width, canvas.height / 2 + Math.random() * 200 - 100], 1.5, 55, 55, "Normal", 2));
+          break;
+        default:
+          monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, Math.floor(Math.random() * 2) * canvas.height], 1.5, 55, 55, "Normal", 2));
+          monstersLeft--;
+      }
+
+      if (monstersLeft < 75 && monstersLeft != 1 && monstersLeft != 51) {
+        let rändöm = Math.floor(Math.random() * 2);
         switch (rändöm) {
           case 0:
-            monsterList.push(new Monsters([0, canvas.height / 2 + Math.random() * 500 - 250], 1.5, 55, 55, "Normal", 2));
-            break;
-          case 1:
-            monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, 0], 1.5, 55, 55, "Normal", 2));
-            break;
-          case 2:
-            monsterList.push(new Monsters([canvas.width, canvas.height / 2 + Math.random() * 500 - 250], 1.5, 55, 55, "Normal", 2));
+            monsterList.push(new Monsters([Math.floor(Math.random() * 2) * canvas.width, canvas.height / 2 + Math.random() * 200 - 100], 2.5, 25, 45, "Fast", 1));
             break;
           default:
-            monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, canvas.height], 1.5, 55, 55, "Normal", 2));
+            monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, Math.floor(Math.random() * 2) * canvas.height], 2.5, 25, 45, "Fast", 1));
+            monstersLeft--;
         }
       }
-      if (difficulty > 3) {
-        for (let a = 0; a < difficulty * 2; a++) {
-          let rändöm = Math.floor(Math.random() * 4);
-          //console.log(rändöm);
-          switch (rändöm) {
-            case 0:
-              monsterList.push(new Monsters([0, canvas.height / 2 + Math.random() * 500 - 250], 2.5, 25, 45, "Fast", 1));
-              break;
-            case 1:
-              monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, 0], 2.5, 25, 45, "Fast", 1));
-              break;
-            case 2:
-              monsterList.push(new Monsters([canvas.width, canvas.height / 2 + Math.random() * 500 - 250], 2.5, 25, 45, "Fast", 1));
-              break;
-            default:
-              monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, canvas.height], 2.5, 25, 45, "Fast", 1));
-          }
-        }
-      }
-      difficulty++;
+
+      mobCooldown = Math.floor(55 - monstersLeft / 5);
     }
 
-    //}
-  } else if (monsterList == 0 && difficulty == 12) {
+    mobCooldown--;
+  } else if (monsterList == 0 && monstersLeft == 0 && Daedalus == null) {
     victory = true;
   }
 }
@@ -655,7 +665,7 @@ function shoot(dirx, diry) {
   let projSpeed = 15;
 
   if (dirx == 0 || diry == 0) {
-    //Attack
+    //Attack;
 
     projectileList.push(new projectile([player.pos[0], player.pos[1]], [dirx, diry], projSpeed, bullethp));
     if (bulletShotgun == true && diry == 0) {
@@ -844,11 +854,10 @@ function Update() {
           }
           mob.hp--;
           if (mob.hp <= 0) {
-            let rändöm = Math.floor(Math.random() * 25);
-            console.log(rändöm);
-            if (rändöm < 4) {
+            let rändöm = Math.floor(Math.random() * 12);
+            if (rändöm < 2) {
               powerUpList.push(new Powerup(mob.pos, coinImg, 600));
-            } else if (rändöm == 24) {
+            } else if (rändöm == 11) {
               rändöm = Math.floor(Math.random() * 7);
 
               switch (rändöm) {
@@ -950,6 +959,9 @@ function Draw() {
   if (teleporter != null) {
     teleporter.TeleporterDraw();
   }
+  if (kioskman != null) {
+    kioskman.VendorDraw();
+  }
   ctx.font = "25px serif";
 
   ctx.fillStyle = "#ff0000";
@@ -963,6 +975,10 @@ function Draw() {
   for (let i = 0; i < hp; i++) {
     d;
     hearts += "♥️";
+  }
+  if (victory == false) {
+    ctx.drawImage(healthBar1, canvas.width / 2 - 98, 50, 196, 24);
+    ctx.drawImage(healthBar2, canvas.width / 2 - 95, 53, 190 * (monstersLeft / 100), 18);
   }
   ctx.fillText(hearts, canvas.width / 2 - hp * 13, 35);
   ctx.font = "30px Arial";
