@@ -38,6 +38,10 @@ let coinImg = new Image(2, 2);
 coinImg.src = "./bilder/Dullar.png";
 let kiosk = new Image(2, 2);
 kiosk.src = "./bilder/grabb.png";
+let pratbubbla = new Image(2, 2);
+pratbubbla.src = "./bilder/pratbubbla.png";
+let shopbild = new Image(2, 2);
+shopbild.src = "./bilder/shop.png";
 const d = new Date();
 let ms = Date.now();
 //console.log(window.innerHeight);
@@ -63,6 +67,7 @@ let victory = false;
 let money = 0;
 let teleporter = null;
 let kioskman = null;
+let shop = false;
 let timer = 300;
 let monstersLeft = 100;
 let mobCooldown = 60;
@@ -196,6 +201,9 @@ class Teleporter {
       }
       if (world == 1) {
         kioskman = new Vendor([900, 345]);
+        shopList.push(new Shop([640, 105], 130, 150, "HP"));
+        shopList.push(new Shop([400, 105], 130, 150, "Speed"));
+        shopList.push(new Shop([520, 255], 130, 150, "AS"));
         world = 2;
         canvas.style.backgroundImage = "url('./bilder/bananShop.png')";
         player.pos[0] = canvas.width / 2 - 25;
@@ -215,6 +223,28 @@ class Vendor {
   }
   VendorDraw() {
     ctx.drawImage(kiosk, this.pos[0], this.pos[1], 75, 75);
+  }
+}
+
+class Shop {
+  constructor(pos, width, height, type) {
+    this.pos = pos;
+    this.width = width;
+    this.height = height;
+    this.type = type;
+  }
+  ShopDraw() {
+    ctx.fillStyle = "#0000FF";
+    ctx.fillRect(this.pos[0], this.pos[1], this.width, this.height);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("DULA", this.pos[0] + this.width / 2, this.pos[1] + this.height / 2);
+  }
+
+  ShopUpdate(mouseX, mouseY) {
+    return mouseX > this.pos[0] && mouseX < this.pos[0] + this.width && mouseY > this.pos[1] && mouseY < this.pos[1] + this.height;
   }
 }
 class Powerup {
@@ -574,6 +604,7 @@ let powerUpList = [];
 let activePowerUps = [];
 let DeathList = [];
 let particleList = [];
+let shopList = [];
 let t1 = 0;
 let t2 = 0;
 let t3 = 0;
@@ -696,7 +727,11 @@ function shoot(dirx, diry) {
     }
   }
 }
-
+function shopping() {
+  canvas.onclick = function (event) {
+    console.log(`X: ${event.clientX}, Y:${event.clientY}`);
+  };
+}
 function Update() {
   if (alive == true) {
     requestAnimationFrame(Update);
@@ -826,6 +861,19 @@ function Update() {
   if (teleporter != null) {
     teleporter.TeleporterUpdate();
   }
+
+  if (shop === true) {
+    for (let shopItem of shopList) {
+      if (shopItem.ShopUpdate(mousepos[0], mousepos[1])) {
+        console.log("MOHAMMAD ABDUL");
+        mousepos = [0, 0];
+      }
+    }
+
+    /* else if (isMouseOverButtonHP())
+    }*/
+  }
+
   for (let particleIndex in particleList) {
     const particle = particleList[particleIndex];
     if (particle.duration < 0) {
@@ -962,6 +1010,24 @@ function Draw() {
   if (kioskman != null) {
     kioskman.VendorDraw();
   }
+  if (shop == true) {
+    ctx.drawImage(shopbild, 350, 50, 500, 400);
+    for (let shopItem of shopList) {
+      shopItem.ShopDraw();
+    }
+  }
+
+  if (kioskman != null) {
+    if (player.pos[0] > kioskman.pos[0] - 200 && player.pos[0] < kioskman.pos[0] + 300 && player.pos[1] > kioskman.pos[1] - 200 && player.pos[1] < kioskman.pos[1] + 300) {
+      ctx.drawImage(pratbubbla, kioskman.pos[0] + 15, kioskman.pos[1] - 80, 250, 125);
+      if (keys["e"]) {
+        shop = true;
+      }
+      if (keys["x"]) {
+        shop = false;
+      }
+    }
+  }
   ctx.font = "25px serif";
 
   ctx.fillStyle = "#ff0000";
@@ -999,6 +1065,7 @@ function Draw() {
   }
   requestAnimationFrame(Draw);
 }
+
 function gameLoop() {
   Update();
   Draw();
@@ -1012,6 +1079,12 @@ window.addEventListener("keyup", (event) => {
   keys[event.key.toLowerCase()] = false;
 });
 
+let mousepos = [0, 0];
+canvas.addEventListener("click", function (event) {
+  var rect = canvas.getBoundingClientRect();
+  mousepos[0] = event.clientX - rect.left;
+  mousepos[1] = event.clientY - rect.top;
+});
 gameLoop();
 if (alive == false) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
