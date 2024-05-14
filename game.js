@@ -72,6 +72,10 @@ let timer = 300;
 let monstersLeft = 100;
 let mobCooldown = 60;
 let world = 1;
+let ASmodifier;
+let speedModifier;
+let AS = 225;
+let speed = 6;
 
 let dx = 0;
 let dy = 0;
@@ -202,8 +206,8 @@ class Teleporter {
       if (world == 1) {
         kioskman = new Vendor([900, 345]);
         shopList.push(new Shop([640, 105], 130, 150, "HP"));
-        shopList.push(new Shop([400, 105], 130, 150, "Speed"));
-        shopList.push(new Shop([520, 255], 130, 150, "AS"));
+        shopList.push(new Shop([520, 255], 130, 150, "Speed"));
+        shopList.push(new Shop([400, 105], 130, 150, "AS"));
         world = 2;
         canvas.style.backgroundImage = "url('./bilder/bananShop.png')";
         player.pos[0] = canvas.width / 2 - 25;
@@ -234,6 +238,7 @@ class Shop {
     this.type = type;
   }
   ShopDraw() {
+    /*
     ctx.fillStyle = "#0000FF";
     ctx.fillRect(this.pos[0], this.pos[1], this.width, this.height);
     ctx.fillStyle = "#FFFFFF";
@@ -241,6 +246,7 @@ class Shop {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("DULA", this.pos[0] + this.width / 2, this.pos[1] + this.height / 2);
+    */
   }
 
   ShopUpdate(mouseX, mouseY) {
@@ -736,18 +742,20 @@ function Update() {
   if (alive == true) {
     requestAnimationFrame(Update);
   }
+  fireCooldown = AS - ASmodifier;
+  player.speed = speed + speedModifier;
   mobSpawn();
 
   if (player.PowerUpsActive.speed == true) {
-    player.speed = 9;
+    speedModifier = 3;
   } else {
-    player.speed = 6;
+    speedModifier = 0;
   }
 
   if (player.PowerUpsActive.attackSpeed == true) {
-    fireCooldown = 150;
+    ASmodifier = 75;
   } else {
-    fireCooldown = 225;
+    ASmodifier = 0;
   }
 
   if (player.PowerUpsActive.penetration == true) {
@@ -865,7 +873,16 @@ function Update() {
   if (shop === true) {
     for (let shopItem of shopList) {
       if (shopItem.ShopUpdate(mousepos[0], mousepos[1])) {
-        console.log("MOHAMMAD ABDUL");
+        if (shopItem.type == "Speed" && money >= 10) {
+          speed += 0.5;
+          money -= 10;
+        } else if (shopItem.type == "AS" && money >= 10) {
+          AS -= 10;
+          money -= 10;
+        } else if (shopItem.type == "HP" && money >= 5) {
+          hp++;
+          money -= 5;
+        }
         mousepos = [0, 0];
       }
     }
