@@ -34,6 +34,8 @@ let attackspeedImg = new Image(2, 2);
 attackspeedImg.src = "./bilder/attackspeed.png";
 let penetrationImg = new Image(2, 2);
 penetrationImg.src = "./bilder/penetration.png";
+let cirkelImg = new Image(2, 2);
+cirkelImg.src = "./bilder/cirkel.png";
 let coinImg = new Image(2, 2);
 coinImg.src = "./bilder/Dullar.png";
 let kiosk = new Image(2, 2);
@@ -44,8 +46,6 @@ let shopbild = new Image(2, 2);
 shopbild.src = "./bilder/shop.png";
 const d = new Date();
 let ms = Date.now();
-//console.log(window.innerHeight);
-//console.log(window.innerWidth);
 let lastFireTime = 0;
 //let fireCooldown = 5;
 let fireCooldown = 225;
@@ -53,9 +53,7 @@ let invincibleDuration = 0;
 let bulletPenetration = false;
 let bulletShotgun = false;
 
-/*ctx.fillStyle = "blue";*/
 ctx.drawImage(image, 580, 250, 65, 65);
-/*ctx.fillRect(300, 300, 50, 50);*/
 let difficulty = 1;
 let score = 0;
 let hp = 10;
@@ -76,6 +74,15 @@ let ASmodifier;
 let speedModifier;
 let AS = 225;
 let speed = 6;
+let mathtimer = 0;
+let spinCD = 0;
+let numOfSpin = 0;
+
+let bossmusic = new Audio("bossmusic.mp3");
+function stopMusic() {
+  bossmusic.pause();
+  bossmusic.currentTime = 0; // Rewind to the beginning
+}
 
 let dx = 0;
 let dy = 0;
@@ -93,14 +100,21 @@ class players {
 
     this.frameIndex = 0;
     this.frameCount = 2;
-    this.timePerFrame = 500;
+    this.timePerFrame = 200;
     this.currentTime = ms;
-    this.frames = [];
+    this.framesIdle = [];
+    this.framesMove = [];
+    this.frames;
 
     for (let i = 0; i < this.frameCount; i++) {
       let frame = new Image();
       frame.src = `./bilder/Spelare/Idle/pixil-frame-${i}.png`;
-      this.frames.push(frame);
+      this.framesIdle.push(frame);
+    }
+    for (let i = 0; i < this.frameCount; i++) {
+      let frame = new Image();
+      frame.src = `./bilder/Spelare/move/pixil-frame-${i}.png`;
+      this.framesMove.push(frame);
     }
 
     this.PowerUpsActive = {
@@ -108,11 +122,17 @@ class players {
       attackSpeed: false,
       penetration: false,
       shotgun: false,
+      spin: false,
     };
   }
 
   playerUpdate() {
     //Röreslse för spelaren
+    if (keys["w"] || keys["a"] || keys["s"] || keys["d"]) {
+      this.frames = this.framesMove;
+    } else {
+      this.frames = this.framesIdle;
+    }
     if (keys["d"]) {
       player.pos[0] += player.speed;
     }
@@ -195,29 +215,37 @@ class Teleporter {
     if (this.pos[0] < player.pos[0] + 60 && this.pos[0] > player.pos[0] - player.width && this.pos[1] < player.pos[1] + 60 && this.pos[1] > player.pos[1] - player.height) {
       if (world == 2) {
         kioskman = null;
-        world = 3;
+        world++;
         teleporter = null;
         victory = false;
         monstersLeft = 100;
         canvas.style.backgroundImage = "url('./bilder/isbanan.png')";
         player.pos[0] = canvas.width / 2 - 25;
         player.pos[1] = 100;
-      }
-      if (world == 1) {
+      } else if (world % 2 == 1) {
         kioskman = new Vendor([900, 345]);
         shopList.push(new Shop([640, 105], 130, 150, "HP"));
         shopList.push(new Shop([520, 255], 130, 150, "Speed"));
         shopList.push(new Shop([400, 105], 130, 150, "AS"));
-        world = 2;
+        shopList.push(new Shop([785, 50], 60, 60, "exit"));
+        world++;
         canvas.style.backgroundImage = "url('./bilder/bananShop.png')";
+        player.pos[0] = canvas.width / 2 - 25;
+        player.pos[1] = 100;
+      } else if (world % 2 == 0 && world > 2) {
+        kioskman = null;
+        world++;
+        teleporter = null;
+        victory = false;
+        monstersLeft = 100;
+        canvas.style.backgroundImage = "url('./bilder/eldbanan.png')";
         player.pos[0] = canvas.width / 2 - 25;
         player.pos[1] = 100;
       }
     }
   }
 }
-//console.log(framesFast);
-//console.log(framesNormal);
+
 class Vendor {
   constructor(pos) {
     this.pos = pos;
@@ -236,17 +264,6 @@ class Shop {
     this.width = width;
     this.height = height;
     this.type = type;
-  }
-  ShopDraw() {
-    /*
-    ctx.fillStyle = "#0000FF";
-    ctx.fillRect(this.pos[0], this.pos[1], this.width, this.height);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("DULA", this.pos[0] + this.width / 2, this.pos[1] + this.height / 2);
-    */
   }
 
   ShopUpdate(mouseX, mouseY) {
@@ -292,6 +309,11 @@ function ActivePowerUpDraw() {
     ctx.drawImage(shotgunImg, 30 + 70 * numOfPowerUps, 30, 40, 45);
     numOfPowerUps++;
   }
+  if (player.PowerUpsActive.spin == true) {
+    ctx.drawImage(powerupsImage, 20 + 70 * numOfPowerUps, 20, 60, 60);
+    ctx.drawImage(cirkelImg, 30 + 70 * numOfPowerUps, 26, 40, 45);
+    numOfPowerUps++;
+  }
 }
 
 function PowerupUpdate() {
@@ -317,6 +339,7 @@ function ActivePowerUps() {
     attackSpeed: false,
     penetration: false,
     shotgun: false,
+    spin: false,
   };
 
   for (let i = activePowerUps.length - 1; i >= 0; i--) {
@@ -334,6 +357,8 @@ function ActivePowerUps() {
       player.PowerUpsActive.penetration = true;
     } else if (power.type == shotgunImg) {
       player.PowerUpsActive.shotgun = true;
+    } else if (power.type == cirkelImg) {
+      player.PowerUpsActive.spin = true;
     }
   }
 }
@@ -356,6 +381,9 @@ function PowerupApply(type) {
   }
   if (type == shotgunImg) {
     activePowerUps.push(new Powerup(0, shotgunImg, 600));
+  }
+  if (type == cirkelImg) {
+    activePowerUps.push(new Powerup(0, cirkelImg, 600));
   }
 }
 
@@ -414,7 +442,7 @@ class Monsters {
         }
         this.currentTime = Date.now();
       }
-      //console.log(framesNormal)
+
       if (distanceX > 0) {
         ctx.save(); // Save the current canvas state
         ctx.scale(-1, 1); // Flip horizontally
@@ -560,16 +588,21 @@ class daidalos {
   }
 }
 class projectile {
-  constructor(startPos, dir, speed, hp) {
+  constructor(startPos, dir, speed, hp, type) {
     this.pos = startPos;
     this.dir = dir;
     this.speed = speed;
     this.hp = hp;
+    this.type = type;
   }
 
   ProjUpdate() {
     // Rörelse för stenar
-    this.pos = [this.pos[0] + this.dir[0] * this.speed, this.pos[1] + this.dir[1] * this.speed];
+    if (this.type == "spin") {
+      this.pos = [player.pos[0] + Math.cos(mathtimer / 10 + this.dir) * 90, player.pos[1] + Math.sin(mathtimer / 10 + this.dir) * 90];
+    } else {
+      this.pos = [this.pos[0] + this.dir[0] * this.speed, this.pos[1] + this.dir[1] * this.speed];
+    }
   }
 
   ProjDraw() {
@@ -742,6 +775,8 @@ function Update() {
   if (alive == true) {
     requestAnimationFrame(Update);
   }
+  mathtimer++;
+  spinCD--;
   fireCooldown = AS - ASmodifier;
   player.speed = speed + speedModifier;
   mobSpawn();
@@ -768,6 +803,20 @@ function Update() {
     bulletShotgun = true;
   } else {
     bulletShotgun = false;
+  }
+  if (player.PowerUpsActive.spin == true && spinCD < 0) {
+    projectileList.push(new projectile([player.pos[0] + Math.cos(mathtimer / 1) * 90, player.pos[1] + Math.sin(mathtimer / 1) * 90], numOfSpin, 0, 30, "spin"));
+    spinCD = 240;
+    numOfSpin += 2;
+  } else if (player.PowerUpsActive.spin == false) {
+    //console.table(projectileList);
+    for (let i = projectileList.length - 1; i >= 0; i--) {
+      let boolet = projectileList[i];
+      if (boolet.type == "spin") {
+        console.log("hej");
+        projectileList.splice(i, 1);
+      }
+    }
   }
 
   //Se till att spelaren inte kan röra sig utanför spelplanen
@@ -800,6 +849,7 @@ function Update() {
     }
   }
   if (Daedalus != null) {
+    bossmusic.play();
     if ((Daedalus.hp < 25 || (Daedalus.hp < 75 && Daedalus.hp > 50)) && t1 <= 0) {
       phaseOne(Daedalus.difficulty);
       if (Daedalus.difficulty == "easy") {
@@ -828,6 +878,7 @@ function Update() {
     t2--;
     t3--;
     if (Daedalus.hp <= 0) {
+      stopMusic();
       for (let i = 0; i < 875; i++) {
         particleList.push(new Particles([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 100, [Math.random() * 2 - 1, Math.random() * 2 - 1], 3));
       }
@@ -844,13 +895,16 @@ function Update() {
       mobProjectileList.splice(i, 1);
     }
   }
-  //console.log(activePowerUps);
 
+  //kolla att skotten är på skärmen
   for (let i = projectileList.length - 1; i >= 0; i--) {
     let boolet = projectileList[i];
+
     boolet.ProjUpdate();
-    if (boolet.pos[0] < 0 || boolet.pos[0] > canvas.width || boolet.pos[1] < 0 || boolet.pos[1] > canvas.height) {
-      projectileList.splice(i, 1);
+    if (boolet.type != "spin") {
+      if (boolet.pos[0] < 0 || boolet.pos[0] > canvas.width || boolet.pos[1] < 0 || boolet.pos[1] > canvas.height) {
+        projectileList.splice(i, 1);
+      }
     }
   }
   if (monsterList) {
@@ -882,13 +936,12 @@ function Update() {
         } else if (shopItem.type == "HP" && money >= 5) {
           hp++;
           money -= 5;
+        } else if (shopItem.type == "exit") {
+          shop = false;
         }
         mousepos = [0, 0];
       }
     }
-
-    /* else if (isMouseOverButtonHP())
-    }*/
   }
 
   for (let particleIndex in particleList) {
@@ -923,7 +976,7 @@ function Update() {
             if (rändöm < 2) {
               powerUpList.push(new Powerup(mob.pos, coinImg, 600));
             } else if (rändöm == 11) {
-              rändöm = Math.floor(Math.random() * 7);
+              rändöm = Math.floor(Math.random() * (4 + world));
 
               switch (rändöm) {
                 case 1:
@@ -937,6 +990,9 @@ function Update() {
                   break;
                 case 4:
                   powerUpList.push(new Powerup(mob.pos, attackspeedImg, 600));
+                  break;
+                case 5:
+                  powerUpList.push(new Powerup(mob.pos, cirkelImg, 600));
                   break;
                 default:
                   powerUpList.push(new Powerup(mob.pos, heartImg, 600));
@@ -952,8 +1008,6 @@ function Update() {
         }
       }
     }
-
-    //console.log(monsterList)
   }
   for (let i = mobProjectileList.length - 1; i >= 0; i--) {
     if (mobProjectileList[i]) {
@@ -1003,6 +1057,7 @@ function Draw() {
   for (let boolet of projectileList) {
     boolet.ProjDraw();
   }
+
   for (let ahmad of mobProjectileList) {
     ahmad.MobProjDraw();
   }
@@ -1029,9 +1084,6 @@ function Draw() {
   }
   if (shop == true) {
     ctx.drawImage(shopbild, 350, 50, 500, 400);
-    for (let shopItem of shopList) {
-      shopItem.ShopDraw();
-    }
   }
 
   if (kioskman != null) {
