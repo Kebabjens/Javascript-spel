@@ -7,7 +7,6 @@ if (!(ctx instanceof CanvasRenderingContext2D)) {
 }
 
 const image = document.getElementById("source");
-const zombieImage = document.getElementById("zombie");
 let projImage = new Image(2, 2);
 projImage.src = "./bilder/steen.png";
 let mobProjImage = new Image(2, 2);
@@ -77,7 +76,7 @@ let speed = 6;
 let mathtimer = 0;
 let spinCD = 0;
 let numOfSpin = 0;
-
+let mobHP = 1;
 let bossmusic = new Audio("bossmusic.mp3");
 function stopMusic() {
   bossmusic.pause();
@@ -220,6 +219,7 @@ class Teleporter {
         victory = false;
         monstersLeft = 100;
         canvas.style.backgroundImage = "url('./bilder/isbanan.png')";
+        mobHP++;
         player.pos[0] = canvas.width / 2 - 25;
         player.pos[1] = 100;
       } else if (world % 2 == 1) {
@@ -239,6 +239,7 @@ class Teleporter {
         victory = false;
         monstersLeft = 100;
         canvas.style.backgroundImage = "url('./bilder/eldbanan.png')";
+        mobHP++;
         player.pos[0] = canvas.width / 2 - 25;
         player.pos[1] = 100;
       }
@@ -512,9 +513,9 @@ class Death {
   }
   DeathDraw() {
     if (this.type == "Normal") {
-      ctx.drawImage(deathImage, this.pos[0], this.pos[1], 50, 50);
+      ctx.drawImage(deathImage, this.pos[0], this.pos[1], 55, 55);
     } else {
-      ctx.drawImage(fastdeathImage, this.pos[0], this.pos[1], 30, 20);
+      ctx.drawImage(fastdeathImage, this.pos[0], this.pos[1], 40, 28);
     }
   }
 }
@@ -648,13 +649,13 @@ let t1 = 0;
 let t2 = 0;
 let t3 = 0;
 
-monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
-monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2));
+monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2 * mobHP));
+monsterList.push(new Monsters([0, Math.random() * 50 + 170], 2, 55, 55, "Normal", 2 * mobHP));
 
 let Daedalus;
 function bossfight(difficulty) {
   if (Daedalus == null) {
-    Daedalus = new daidalos([300, -100], 0.6, 200, 200, 100, difficulty);
+    Daedalus = new daidalos([-300, 300], 0.6, 200, 200, 100, difficulty);
   }
 }
 
@@ -668,9 +669,9 @@ function phaseOne(difficulty) {
   }
 }
 function phaseTwo() {
-  monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2 + 20, Daedalus.pos[1] + Daedalus.height / 2], 1.5, 55, 55, "Normal", 2));
-  monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 1.5, 55, 55, "Normal", 2));
-  monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2 - 20, Daedalus.pos[1] + Daedalus.height / 2], 2, 25, 45, "Fast", 2));
+  monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2 + 20, Daedalus.pos[1] + Daedalus.height / 2], 1.5, 55, 55, "Normal", 2 * mobHP));
+  monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2, Daedalus.pos[1] + Daedalus.height / 2], 1.5, 55, 55, "Normal", 2 * mobHP));
+  monsterList.push(new Monsters([Daedalus.pos[0] + Daedalus.width / 2 - 20, Daedalus.pos[1] + Daedalus.height / 2], 2, 25, 45, "Fast", 1 * mobHP));
 }
 function phaseThree(difficulty) {
   dx = player.pos[0] + player.width / 2 - Daedalus.pos[0] + Daedalus.width / 2 - 200;
@@ -683,10 +684,11 @@ function mobSpawn() {
   if (Daedalus == null) {
     if (monstersLeft == 51) {
       bossfight("easy");
+      bossImage.src = "./bilder/daidolos.png";
       monstersLeft--;
     } else if (monstersLeft == 1) {
-      bossImage.src = "./bilder/daidolosElak.png";
       bossfight("hardmän");
+      bossImage.src = "./bilder/daidolosElak.png";
       monstersLeft--;
     }
   }
@@ -696,10 +698,10 @@ function mobSpawn() {
       let rändöm = Math.floor(Math.random() * 2);
       switch (rändöm) {
         case 0:
-          monsterList.push(new Monsters([Math.floor(Math.random() * 2) * canvas.width, canvas.height / 2 + Math.random() * 200 - 100], 1.5, 55, 55, "Normal", 2));
+          monsterList.push(new Monsters([Math.floor(Math.random() * 2) * canvas.width, canvas.height / 2 + Math.random() * 200 - 100], 1.5, 55, 55, "Normal", 2 * mobHP));
           break;
         default:
-          monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, Math.floor(Math.random() * 2) * canvas.height], 1.5, 55, 55, "Normal", 2));
+          monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, Math.floor(Math.random() * 2) * canvas.height], 1.5, 55, 55, "Normal", 2 * mobHP));
           monstersLeft--;
       }
 
@@ -707,10 +709,10 @@ function mobSpawn() {
         let rändöm = Math.floor(Math.random() * 2);
         switch (rändöm) {
           case 0:
-            monsterList.push(new Monsters([Math.floor(Math.random() * 2) * canvas.width, canvas.height / 2 + Math.random() * 200 - 100], 2.5, 25, 45, "Fast", 1));
+            monsterList.push(new Monsters([Math.floor(Math.random() * 2) * canvas.width, canvas.height / 2 + Math.random() * 200 - 100], 2.5, 25, 45, "Fast", 1 * mobHP));
             break;
           default:
-            monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, Math.floor(Math.random() * 2) * canvas.height], 2.5, 25, 45, "Fast", 1));
+            monsterList.push(new Monsters([canvas.width / 2 + Math.random() * 500 - 250, Math.floor(Math.random() * 2) * canvas.height], 2.5, 25, 45, "Fast", 1 * mobHP));
             monstersLeft--;
         }
       }
@@ -972,10 +974,10 @@ function Update() {
           }
           mob.hp--;
           if (mob.hp <= 0) {
-            let rändöm = Math.floor(Math.random() * 12);
+            let rändöm = Math.floor(Math.random() * 10);
             if (rändöm < 2) {
               powerUpList.push(new Powerup(mob.pos, coinImg, 600));
-            } else if (rändöm == 11) {
+            } else if (rändöm == 9) {
               rändöm = Math.floor(Math.random() * (4 + world));
 
               switch (rändöm) {
